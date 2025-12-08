@@ -1,7 +1,17 @@
 // Game State
 const gameState = {
     currentPlayer: 1,
-    phase: 'welcome', // welcome, placement, battle, gameover
+    phase: 'welcome', // welcome, settings, placement, battle, gameover
+    shootingRule: 'oneshot', // oneshot, twoshots, threeshots, tillmiss, shipfire
+    shipCounts: {
+        'Carrier': 1,
+        'Battleship': 1,
+        'Cruiser': 1,
+        'Submarine': 1,
+        'Destroyer': 1
+    },
+    shotsThisTurn: 0,
+    lastShotHit: false,
     player1: {
         board: [],
         ships: [],
@@ -28,12 +38,15 @@ const gameState = {
 
 // DOM Elements
 const welcomeScreen = document.getElementById('welcome-screen');
+const settingsScreen = document.getElementById('settings-screen');
 const playerTurnScreen = document.getElementById('player-turn-screen');
 const placementScreen = document.getElementById('placement-screen');
 const battleScreen = document.getElementById('battle-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 
 const startGameBtn = document.getElementById('start-game-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const backToWelcomeBtn = document.getElementById('back-to-welcome-btn');
 const playBtn = document.getElementById('play-btn');
 const rotateBtn = document.getElementById('rotate-btn');
 const donePlacementBtn = document.getElementById('done-placement-btn');
@@ -45,6 +58,7 @@ const placementTitle = document.getElementById('placement-title');
 const currentShipInfo = document.getElementById('current-ship-info');
 const battleTitle = document.getElementById('battle-title');
 const winnerText = document.getElementById('winner-text');
+const ruleDescription = document.getElementById('rule-description');
 
 // Initialize game
 function initGame() {
@@ -88,12 +102,17 @@ function createEmptyBoard() {
 
 // Screen management
 function showScreen(screenName) {
-    const screens = [welcomeScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen];
+    const screens = [welcomeScreen, settingsScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen];
     screens.forEach(screen => screen.classList.remove('active'));
     
     switch(screenName) {
         case 'welcome':
+            gameState.phase = 'welcome';
             welcomeScreen.classList.add('active');
+            break;
+        case 'settings':
+            gameState.phase = 'settings';
+            settingsScreen.classList.add('active');
             break;
         case 'playerTurn':
             playerTurnScreen.classList.add('active');
@@ -109,9 +128,10 @@ function showScreen(screenName) {
             break;
         case 'battle':
             gameState.phase = 'battle';
-            gameState.hasShot = false;
+            gameState.shotsThisTurn = 0;
+            gameState.lastShotHit = false;
             battleScreen.classList.add('active');
-            battleTitle.textContent = `Player ${gameState.currentPlayer} - Attack!`;
+            updateBattleTitle();
             renderBattleBoards();
             break;
         case 'gameover':
@@ -123,10 +143,19 @@ function showScreen(screenName) {
 // Ship placement
 function updateShipInfo() {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
-    const allPlaced = currentPlayerData.ships.length === gameState.shipTypes.length;
+    const totalEnabledShips = Object.values(gameState.shipCounts).reduce((a, b) => a + b, 0);
+    const allPlaced = currentPlayerData.ships.length === totalEnabledShips;
     
     if (!allPlaced && gameState.currentShipIndex < gameState.shipTypes.length) {
         const ship = gameState.shipTypes[gameState.currentShipIndex];
+        
+        // Skip ships with count 0
+        if (gameState.shipCounts[ship.name] === 0) {
+            currentShipInfo.textContent = 'All ships placed!';
+            donePlacementBtn.disabled = false;
+            return;
+        }
+        
         const orientation = gameState.isHorizontal ? 'Horizontal' : 'Vertical';
         currentShipInfo.textContent = `Place your ${ship.name} (${ship.size} cells) - ${orientation} (Press R to rotate)`;
         donePlacementBtn.disabled = true;
@@ -141,16 +170,26 @@ function renderShipSelector() {
     shipList.innerHTML = '';
     
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
-    const placedShipNames = currentPlayerData.ships.map(s => s.name);
+    const placedShipCounts = {};
     
+    // Count placed ships by name
+    currentPlayerData.ships.forEach(ship => {
+        placedShipCounts[ship.name] = (placedShipCounts[ship.name] || 0) + 1;
+    });
+    
+    // Only show ships with count > 0
     gameState.shipTypes.forEach((ship, index) => {
+        if (gameState.shipCounts[ship.name] === 0) return;
+        
         const shipOption = document.createElement('div');
         shipOption.classList.add('ship-option');
         
-        const isPlaced = placedShipNames.includes(ship.name);
+        const placedCount = placedShipCounts[ship.name] || 0;
+        const totalCount = gameState.shipCounts[ship.name];
+        const allPlaced = placedCount >= totalCount;
         const isSelected = index === gameState.currentShipIndex;
         
-        if (isPlaced) {
+        if (allPlaced) {
             shipOption.classList.add('placed');
         }
         if (isSelected) {
@@ -159,12 +198,12 @@ function renderShipSelector() {
         
         shipOption.innerHTML = `
             <span class="ship-name">${ship.name}</span>
-            <span class="ship-size">${ship.size} cells${isPlaced ? ' ✓' : ''}</span>
+            <span class="ship-size">${ship.size} cells (${placedCount}/${totalCount})</span>
         `;
         
         shipOption.addEventListener('click', () => {
             // If clicking on a placed ship, remove it from the board to reposition
-            if (isPlaced) {
+            if (placedCount > 0) {
                 removeShipFromBoard(ship.name);
             }
             gameState.currentShipIndex = index;
@@ -181,8 +220,15 @@ function renderShipSelector() {
 function removeShipFromBoard(shipName) {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
     
-    // Find the ship
-    const shipIndex = currentPlayerData.ships.findIndex(s => s.name === shipName);
+    // Find the last ship with this name
+    let shipIndex = -1;
+    for (let i = currentPlayerData.ships.length - 1; i >= 0; i--) {
+        if (currentPlayerData.ships[i].name === shipName) {
+            shipIndex = i;
+            break;
+        }
+    }
+    
     if (shipIndex === -1) return;
     
     const ship = currentPlayerData.ships[shipIndex];
@@ -233,13 +279,16 @@ function renderPlacementBoard() {
 
 function handleCellHover(e) {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
-    if (currentPlayerData.ships.length >= gameState.shipTypes.length) return;
+    const totalEnabledShips = Object.values(gameState.shipCounts).reduce((a, b) => a + b, 0);
+    if (currentPlayerData.ships.length >= totalEnabledShips) return;
     if (gameState.currentShipIndex >= gameState.shipTypes.length) return;
+    
+    const ship = gameState.shipTypes[gameState.currentShipIndex];
+    if (gameState.shipCounts[ship.name] === 0) return;
     
     clearPreview();
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
-    const ship = gameState.shipTypes[gameState.currentShipIndex];
     
     const cells = getShipCells(row, col, ship.size, gameState.isHorizontal);
     const isValid = isValidPlacement(cells);
@@ -260,21 +309,33 @@ function clearPreview() {
 
 function handleCellClick(e) {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
-    if (currentPlayerData.ships.length >= gameState.shipTypes.length) return;
+    const totalEnabledShips = Object.values(gameState.shipCounts).reduce((a, b) => a + b, 0);
+    if (currentPlayerData.ships.length >= totalEnabledShips) return;
     if (gameState.currentShipIndex >= gameState.shipTypes.length) return;
+    
+    const ship = gameState.shipTypes[gameState.currentShipIndex];
+    if (gameState.shipCounts[ship.name] === 0) return;
     
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
-    const ship = gameState.shipTypes[gameState.currentShipIndex];
     
     const cells = getShipCells(row, col, ship.size, gameState.isHorizontal);
     
     if (isValidPlacement(cells)) {
         placeShip(cells, ship);
         
-        // Find next unplaced ship
-        const placedShipNames = currentPlayerData.ships.map(s => s.name);
-        let nextIndex = gameState.shipTypes.findIndex((s, i) => !placedShipNames.includes(s.name));
+        // Find next ship that still needs to be placed
+        const placedShipCounts = {};
+        currentPlayerData.ships.forEach(s => {
+            placedShipCounts[s.name] = (placedShipCounts[s.name] || 0) + 1;
+        });
+        
+        let nextIndex = gameState.shipTypes.findIndex((s, i) => {
+            const count = gameState.shipCounts[s.name];
+            const placed = placedShipCounts[s.name] || 0;
+            return count > 0 && placed < count;
+        });
+        
         if (nextIndex === -1) {
             nextIndex = gameState.shipTypes.length;
         }
@@ -390,7 +451,7 @@ function renderBattleBoards() {
                         cell.classList.add('sunk');
                     }
                 }
-            } else {
+            } else if (canShootMore()) {
                 cell.addEventListener('click', handleAttack);
             }
             
@@ -400,8 +461,8 @@ function renderBattleBoards() {
 }
 
 function handleAttack(e) {
-    // Only allow one shot per turn
-    if (gameState.hasShot) return;
+    // Check if player has used all their shots for this turn
+    if (!canShootMore()) return;
     
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
@@ -415,7 +476,8 @@ function handleAttack(e) {
     
     cellData.isHit = true;
     currentPlayerData.shots++;
-    gameState.hasShot = true;
+    gameState.shotsThisTurn++;
+    gameState.lastShotHit = cellData.hasShip;
     
     if (cellData.hasShip) {
         currentPlayerData.hits++;
@@ -429,13 +491,38 @@ function handleAttack(e) {
     }
     
     renderBattleBoards();
+    updateBattleTitle();
     
     // Check for game over
     if (checkGameOver()) {
         endGame();
     } else {
-        endTurnBtn.disabled = false;
+        // Check if player can take more shots
+        if (!canShootMore()) {
+            // End turn after a short delay
+            setTimeout(() => {
+                endTurnBtn.disabled = false;
+            }, 300);
+        }
     }
+}
+
+function canShootMore() {
+    if (gameState.shootingRule === 'oneshot') {
+        return gameState.shotsThisTurn === 0;
+    } else if (gameState.shootingRule === 'twoshots') {
+        return gameState.shotsThisTurn < 2;
+    } else if (gameState.shootingRule === 'threeshots') {
+        return gameState.shotsThisTurn < 3;
+    } else if (gameState.shootingRule === 'tillmiss') {
+        return gameState.lastShotHit || gameState.shotsThisTurn === 0;
+    } else if (gameState.shootingRule === 'shipfire') {
+        const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+        // Count remaining (non-sunk) ships
+        const remainingShips = currentPlayerData.ships.filter(ship => !ship.sunk).length;
+        return gameState.shotsThisTurn < remainingShips;
+    }
+    return true;
 }
 
 function checkGameOver() {
@@ -465,6 +552,86 @@ startGameBtn.addEventListener('click', () => {
     gameState.currentPlayer = 1;
     showScreen('playerTurn');
 });
+
+settingsBtn.addEventListener('click', () => {
+    showScreen('settings');
+});
+
+backToWelcomeBtn.addEventListener('click', () => {
+    showScreen('welcome');
+});
+
+// Settings radio buttons
+document.querySelectorAll('input[name="shootingRules"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.shootingRule = e.target.value;
+        updateRuleDescription();
+    });
+});
+
+// Ship count inputs
+document.querySelectorAll('.ship-count').forEach(input => {
+    input.addEventListener('change', (e) => {
+        const shipName = e.target.dataset.ship;
+        const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+        gameState.shipCounts[shipName] = count;
+        e.target.value = count;
+        updateShipCountDisplay();
+    });
+    
+    // Update display on input event
+    input.addEventListener('input', updateShipCountDisplay);
+});
+
+function updateShipCountDisplay() {
+    const totalShips = Object.values(gameState.shipCounts).reduce((a, b) => a + b, 0);
+    const shipCountDisplay = document.getElementById('ship-count-display');
+    const shipErrorMessage = document.getElementById('ship-error-message');
+    
+    shipCountDisplay.textContent = `Total Ships: ${totalShips}/10`;
+    
+    // Check for invalid settings
+    const isValid = totalShips > 0 && totalShips <= 10;
+    
+    if (!isValid) {
+        shipErrorMessage.style.display = 'block';
+        startGameBtn.disabled = true;
+    } else {
+        shipErrorMessage.style.display = 'none';
+        startGameBtn.disabled = false;
+    }
+}
+
+function updateRuleDescription() {
+    const descriptions = {
+        oneshot: 'Get one shot per turn',
+        twoshots: 'Get two shots per turn',
+        threeshots: 'Get three shots per turn',
+        tillmiss: 'Keep shooting until you miss a shot',
+        shipfire: `Get ${gameState.player1.ships.length || 5} shots per turn (one per ship)`
+    };
+    ruleDescription.textContent = descriptions[gameState.shootingRule];
+}
+
+function updateBattleTitle() {
+    const rule = gameState.shootingRule;
+    let shots = gameState.shotsThisTurn;
+    let maxShots = 1;
+    
+    if (rule === 'twoshots') maxShots = 2;
+    else if (rule === 'threeshots') maxShots = 3;
+    else if (rule === 'shipfire') {
+        const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+        // Count remaining (non-sunk) ships for ship fire
+        maxShots = currentPlayerData.ships.filter(ship => !ship.sunk).length;
+    } else if (rule === 'tillmiss') maxShots = '∞';
+    
+    if (maxShots === '∞') {
+        battleTitle.textContent = `Player ${gameState.currentPlayer} - Attack! (Shot: ${shots + 1})`;
+    } else {
+        battleTitle.textContent = `Player ${gameState.currentPlayer} - Attack! (${shots}/${maxShots})`;
+    }
+}
 
 playBtn.addEventListener('click', () => {
     if (gameState.currentShipIndex === 0) {
@@ -520,3 +687,4 @@ playAgainBtn.addEventListener('click', () => {
 
 // Initialize on load
 initGame();
+updateShipCountDisplay();

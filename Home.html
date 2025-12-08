@@ -10,7 +10,71 @@
     <!-- Welcome Screen -->
     <div id="welcome-screen" class="screen active">
         <h1>BATTLESHIP</h1>
+        <button id="settings-btn" class="main-btn secondary">Settings</button>
         <button id="start-game-btn" class="main-btn">Start Game</button>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <h2>Game Settings</h2>
+        <div class="settings-container">
+            <div class="setting-group">
+                <h3>Shooting Rules</h3>
+                <div class="option-group">
+                    <label>
+                        <input type="radio" name="shootingRules" value="oneshot" checked>
+                        <span>One shot per person</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="shootingRules" value="twoshots">
+                        <span>Two shots per person</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="shootingRules" value="threeshots">
+                        <span>Three shots per person</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="shootingRules" value="tillmiss">
+                        <span>Shoot till you miss</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="shootingRules" value="shipfire">
+                        <span>Ship Fire (shots = number of ships)</span>
+                    </label>
+                </div>
+            </div>
+            <p id="rule-description" class="rule-description">Get one shot per turn</p>
+        </div>
+        <div class="settings-container">
+            <div class="setting-group">
+                <h3>Ships</h3>
+                <div class="ships-config-group">
+                    <div class="ship-config-item">
+                        <label>Carrier (5 cells)</label>
+                        <input type="number" class="ship-count" data-ship="Carrier" min="0" max="10" value="1">
+                    </div>
+                    <div class="ship-config-item">
+                        <label>Battleship (4 cells)</label>
+                        <input type="number" class="ship-count" data-ship="Battleship" min="0" max="10" value="1">
+                    </div>
+                    <div class="ship-config-item">
+                        <label>Cruiser (3 cells)</label>
+                        <input type="number" class="ship-count" data-ship="Cruiser" min="0" max="10" value="1">
+                    </div>
+                    <div class="ship-config-item">
+                        <label>Submarine (3 cells)</label>
+                        <input type="number" class="ship-count" data-ship="Submarine" min="0" max="10" value="1">
+                    </div>
+                    <div class="ship-config-item">
+                        <label>Destroyer (2 cells)</label>
+                        <input type="number" class="ship-count" data-ship="Destroyer" min="0" max="10" value="1">
+                    </div>
+                </div>
+                <p id="ship-count-display" class="ship-count-display">Total Ships: 5/10</p>
+                <p id="ship-error-message" class="ship-error-message" style="display: none;">Invalid Settings - Please fix them</p>
+            </div>
+        </div>
+        <button id="back-to-welcome-btn" class="main-btn">Back</button>
     </div>
 
     <!-- Player Turn Screen (Blank with Play Button) -->
