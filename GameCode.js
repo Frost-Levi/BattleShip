@@ -6,6 +6,9 @@ const gameState = {
     maxShips: 10, // Dynamic based on grid size
     shootingRule: 'oneshot', // oneshot, twoshots, threeshots, tillmiss, shipfire
     fogOfWar: false, // true = only see sunk ships, false = see hit/miss
+    powerUpsEnabled: false, // true = enable power-ups system
+    activePowerUp: null, // Currently active power-up for the turn
+    sonarMode: false, // If sonar is active waiting for selection
     shipCounts: {
         'Carrier': 1,
         'Battleship': 1,
@@ -19,13 +22,25 @@ const gameState = {
         board: [],
         ships: [],
         shots: 0,
-        hits: 0
+        hits: 0,
+        powerPoints: 2,
+        usedPowerUpThisTurn: false,
+        cloakActive: false,
+        scopeActive: false,
+        extraShotUsed: false,
+        cloakedCells: [] // Array of [row, col] coordinates that are cloaked
     },
     player2: {
         board: [],
         ships: [],
         shots: 0,
-        hits: 0
+        hits: 0,
+        powerPoints: 2,
+        usedPowerUpThisTurn: false,
+        cloakActive: false,
+        scopeActive: false,
+        extraShotUsed: false,
+        cloakedCells: [] // Array of [row, col] coordinates that are cloaked
     },
     shipTypes: [
         { name: 'Carrier', size: 5 },
@@ -74,14 +89,26 @@ function initGame() {
         board: createEmptyBoard(),
         ships: [],
         shots: 0,
-        hits: 0
+        hits: 0,
+        powerPoints: 2,
+        usedPowerUpThisTurn: false,
+        cloakActive: false,
+        scopeActive: false,
+        extraShotUsed: false,
+        cloakedCells: []
     };
     
     gameState.player2 = {
         board: createEmptyBoard(),
         ships: [],
         shots: 0,
-        hits: 0
+        hits: 0,
+        powerPoints: 2,
+        usedPowerUpThisTurn: false,
+        cloakActive: false,
+        scopeActive: false,
+        extraShotUsed: false,
+        cloakedCells: []
     };
     
     showScreen('welcome');
@@ -133,10 +160,16 @@ function showScreen(screenName) {
             gameState.phase = 'battle';
             gameState.shotsThisTurn = 0;
             gameState.lastShotHit = false;
+            gameState.sonarMode = false;
+            const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+            currentPlayerData.usedPowerUpThisTurn = false;
+            currentPlayerData.scopeActive = false;
+            currentPlayerData.extraShotUsed = false;
             battleScreen.classList.add('active');
             updateLegend();
             updateBattleTitle();
             renderBattleBoards();
+            updatePowerUps();
             break;
         case 'gameover':
             gameOverScreen.classList.add('active');
@@ -456,8 +489,25 @@ function renderBattleBoards() {
             const cellData = enemyPlayerData.board[row][col];
             
             if (cellData.isHit) {
-                // In fog of war, only show sunk ships with a marker for shot squares
-                if (gameState.fogOfWar) {
+                // Check if this specific cell is cloaked
+                const isCloaked = currentPlayerData.cloakedCells.some(([r, c]) => r === row && c === col);
+                
+                // Allow clicking cloaked cells or cells in fog of war to reveal/re-shoot
+                if (isCloaked || gameState.fogOfWar) {
+                    cell.addEventListener('click', handleAttack);
+                }
+                
+                // Check if cloak or scope power-ups override display mode
+                let showFeedback = !gameState.fogOfWar;
+                if (isCloaked) {
+                    showFeedback = false; // This cell is cloaked, hide feedback
+                } else if (currentPlayerData.scopeActive) {
+                    showFeedback = true; // You used scope, see feedback
+                }
+                
+                // Display based on feedback mode
+                if (!showFeedback) {
+                    // Fog of war or cloak mode: only show sunk ships with marker for shots
                     if (cellData.hasShip && cellData.shipId !== null) {
                         const ship = enemyPlayerData.ships[cellData.shipId];
                         if (ship.sunk) {
@@ -471,7 +521,7 @@ function renderBattleBoards() {
                         cell.classList.add('shot-marker');
                     }
                 } else {
-                    // Normal mode: show all hits and misses
+                    // Normal mode or scope: show all hits and misses
                     cell.classList.add(cellData.hasShip ? 'hit' : 'miss');
                     
                     // Check if ship is sunk
@@ -482,7 +532,7 @@ function renderBattleBoards() {
                         }
                     }
                 }
-            } else if (canShootMore()) {
+            } else if (canShootMore() || gameState.sonarMode) {
                 cell.addEventListener('click', handleAttack);
             }
             
@@ -492,6 +542,14 @@ function renderBattleBoards() {
 }
 
 function handleAttack(e) {
+    // Handle sonar mode
+    if (gameState.sonarMode) {
+        const row = parseInt(e.target.dataset.row);
+        const col = parseInt(e.target.dataset.col);
+        revealSonarArea(row, col);
+        return;
+    }
+    
     // Check if player has used all their shots for this turn
     if (!canShootMore()) return;
     
@@ -503,12 +561,59 @@ function handleAttack(e) {
     
     const cellData = enemyPlayerData.board[row][col];
     
-    if (cellData.isHit) return; // Already hit
+    // Check if this cell is cloaked - allow re-shooting to reveal
+    // Cloaked cells are stored in currentPlayer's array (cells I shot that are hidden)
+    const cloakedIndex = currentPlayerData.cloakedCells.findIndex(([r, c]) => r === row && c === col);
+    
+    // If already hit, check if it's cloaked (can be re-shot) or in fog of war (can be re-shot)
+    if (cellData.isHit) {
+        // Can re-shoot if it's cloaked OR if we're in fog of war
+        if (cloakedIndex === -1 && !gameState.fogOfWar) {
+            return; // Already hit and not cloaked and not in fog of war - can't shoot
+        }
+        
+        // If we're here, it's either cloaked or in fog of war, so we can re-shoot
+        currentPlayerData.shots++;
+        gameState.shotsThisTurn++;
+        
+        // Show what was there
+        if (cellData.hasShip) {
+            alert('It was a HIT!');
+        } else {
+            alert('It was a MISS!');
+        }
+        
+        // Remove from cloaked if it was cloaked
+        if (cloakedIndex !== -1) {
+            currentPlayerData.cloakedCells.splice(cloakedIndex, 1);
+        }
+        
+        renderBattleBoards();
+        updateBattleTitle();
+        
+        // Update power-ups to disable if no more shots
+        if (gameState.powerUpsEnabled) {
+            updatePowerUps();
+        }
+        
+        // Check if player can take more shots
+        if (!canShootMore()) {
+            setTimeout(() => {
+                endTurnBtn.disabled = false;
+            }, 300);
+        }
+        return;
+    }
     
     cellData.isHit = true;
     currentPlayerData.shots++;
     gameState.shotsThisTurn++;
     gameState.lastShotHit = cellData.hasShip;
+    
+    // If cloak is active, mark this cell as cloaked (so the current player can't see feedback)
+    if (currentPlayerData.cloakActive) {
+        currentPlayerData.cloakedCells.push([row, col]);
+    }
     
     if (cellData.hasShip) {
         currentPlayerData.hits++;
@@ -518,11 +623,21 @@ function handleAttack(e) {
         if (ship.hits === ship.cells.length) {
             ship.sunk = true;
             alert(`You sunk the enemy's ${ship.name}!`);
+            // Award power point for sinking a ship
+            if (gameState.powerUpsEnabled) {
+                currentPlayerData.powerPoints++;
+                updatePowerUps();
+            }
         }
     }
     
     renderBattleBoards();
     updateBattleTitle();
+    
+    // Update power-ups to disable if no more shots
+    if (gameState.powerUpsEnabled) {
+        updatePowerUps();
+    }
     
     // Check for game over
     if (checkGameOver()) {
@@ -539,21 +654,29 @@ function handleAttack(e) {
 }
 
 function canShootMore() {
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    let maxShots = 1;
+    
     if (gameState.shootingRule === 'oneshot') {
-        return gameState.shotsThisTurn === 0;
+        maxShots = 1;
     } else if (gameState.shootingRule === 'twoshots') {
-        return gameState.shotsThisTurn < 2;
+        maxShots = 2;
     } else if (gameState.shootingRule === 'threeshots') {
-        return gameState.shotsThisTurn < 3;
+        maxShots = 3;
     } else if (gameState.shootingRule === 'tillmiss') {
         return gameState.lastShotHit || gameState.shotsThisTurn === 0;
     } else if (gameState.shootingRule === 'shipfire') {
-        const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
         // Count remaining (non-sunk) ships
         const remainingShips = currentPlayerData.ships.filter(ship => !ship.sunk).length;
-        return gameState.shotsThisTurn < remainingShips;
+        maxShots = remainingShips;
     }
-    return true;
+    
+    // Add extra shot if power-up was used
+    if (currentPlayerData.extraShotUsed && gameState.shootingRule !== 'tillmiss') {
+        maxShots++;
+    }
+    
+    return gameState.shotsThisTurn < maxShots;
 }
 
 function checkGameOver() {
@@ -613,6 +736,13 @@ document.querySelectorAll('input[name="gridSize"]').forEach(radio => {
 document.querySelectorAll('input[name="fogOfWar"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.fogOfWar = e.target.value === 'on';
+    });
+});
+
+// Power-Ups radio buttons
+document.querySelectorAll('input[name="powerUps"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.powerUpsEnabled = e.target.value === 'on';
     });
 });
 
@@ -693,6 +823,133 @@ function updateLegend() {
     }
 }
 
+// Power-Ups System
+function updatePowerUps() {
+    const powerUpsContainer = document.getElementById('power-ups-container');
+    const powerPointsDisplay = document.getElementById('power-points');
+    const sonarBtn = document.getElementById('sonar-btn');
+    const extraShotBtn = document.getElementById('extra-shot-btn');
+    const cloakBtn = document.getElementById('cloak-btn');
+    const scopeBtn = document.getElementById('scope-btn');
+    
+    if (!gameState.powerUpsEnabled) {
+        powerUpsContainer.style.display = 'none';
+        return;
+    }
+    
+    powerUpsContainer.style.display = 'block';
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    powerPointsDisplay.textContent = `Power Points: ${currentPlayerData.powerPoints}`;
+    
+    // Show Cloak or Scope based on fog of war setting
+    if (gameState.fogOfWar) {
+        cloakBtn.style.display = 'none';
+        scopeBtn.style.display = 'flex';
+    } else {
+        cloakBtn.style.display = 'flex';
+        scopeBtn.style.display = 'none';
+    }
+    
+    // Enable/disable buttons based on power points, usage, and whether shots remain
+    const hasMoreShots = canShootMore();
+    const canUsePowerUp = currentPlayerData.powerPoints > 0 && !currentPlayerData.usedPowerUpThisTurn && hasMoreShots;
+    sonarBtn.disabled = !canUsePowerUp;
+    extraShotBtn.disabled = !canUsePowerUp;
+    cloakBtn.disabled = !canUsePowerUp;
+    scopeBtn.disabled = !canUsePowerUp;
+}
+
+function useSonar() {
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    if (currentPlayerData.powerPoints < 1 || currentPlayerData.usedPowerUpThisTurn) return;
+    
+    currentPlayerData.powerPoints--;
+    currentPlayerData.usedPowerUpThisTurn = true;
+    gameState.sonarMode = true;
+    
+    alert('Sonar activated! Click a cell to reveal a 3x3 area around it.');
+    updatePowerUps();
+}
+
+function revealSonarArea(row, col) {
+    const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+    const enemyBoard = document.getElementById('enemy-board');
+    let shipsFound = [];
+    
+    // Check 3x3 area
+    for (let r = row - 1; r <= row + 1; r++) {
+        for (let c = col - 1; c <= col + 1; c++) {
+            if (r >= 0 && r < gameState.gridSize && c >= 0 && c < gameState.gridSize) {
+                const cellData = enemyPlayerData.board[r][c];
+                const cellElement = enemyBoard.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                
+                if (cellElement) {
+                    cellElement.classList.add('sonar-reveal');
+                    setTimeout(() => cellElement.classList.remove('sonar-reveal'), 2000);
+                }
+                
+                if (cellData.hasShip && cellData.shipId !== null) {
+                    const ship = enemyPlayerData.ships[cellData.shipId];
+                    if (!shipsFound.includes(ship.name)) {
+                        shipsFound.push(ship.name);
+                    }
+                }
+            }
+        }
+    }
+    
+    gameState.sonarMode = false;
+    
+    if (shipsFound.length > 0) {
+        alert(`Sonar detected: ${shipsFound.join(', ')}`);
+    } else {
+        alert('Sonar detected: No ships in area');
+    }
+}
+
+function useExtraShot() {
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    if (currentPlayerData.powerPoints < 1 || currentPlayerData.usedPowerUpThisTurn) return;
+    
+    currentPlayerData.powerPoints--;
+    currentPlayerData.usedPowerUpThisTurn = true;
+    currentPlayerData.extraShotUsed = true;
+    
+    alert('Extra shot granted! You have one additional shot this turn.');
+    updatePowerUps();
+}
+
+function useCloak() {
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+    if (currentPlayerData.powerPoints < 1 || currentPlayerData.usedPowerUpThisTurn) return;
+    
+    currentPlayerData.powerPoints--;
+    currentPlayerData.usedPowerUpThisTurn = true;
+    enemyPlayerData.cloakActive = true;
+    
+    alert('Cloak activated! Your opponent will not see feedback for their entire next turn.');
+    updatePowerUps();
+}
+
+function useScope() {
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    if (currentPlayerData.powerPoints < 1 || currentPlayerData.usedPowerUpThisTurn) return;
+    
+    currentPlayerData.powerPoints--;
+    currentPlayerData.usedPowerUpThisTurn = true;
+    currentPlayerData.scopeActive = true;
+    
+    alert('Scope activated! You will see hit/miss feedback this turn.');
+    updatePowerUps();
+}
+
+// Power-up button event listeners
+document.getElementById('sonar-btn').addEventListener('click', useSonar);
+document.getElementById('extra-shot-btn').addEventListener('click', useExtraShot);
+document.getElementById('cloak-btn').addEventListener('click', useCloak);
+document.getElementById('scope-btn').addEventListener('click', useScope);
+
 playBtn.addEventListener('click', () => {
     if (gameState.currentShipIndex === 0) {
         // Starting placement
@@ -735,6 +992,12 @@ donePlacementBtn.addEventListener('click', () => {
 });
 
 endTurnBtn.addEventListener('click', () => {
+    // Reset turn-specific flags before switching players
+    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    currentPlayerData.extraShotUsed = false;
+    currentPlayerData.scopeActive = false;
+    currentPlayerData.cloakActive = false; // Reset cloak after turn ends
+    
     // Switch players
     gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
     endTurnBtn.disabled = true;

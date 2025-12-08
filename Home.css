@@ -616,6 +616,88 @@ h3 {
     margin-top: 20px;
 }
 
+/* Power-Ups Styles */
+.power-ups-container {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.power-ups-container h3 {
+    margin-bottom: 15px;
+    color: #4ecdc4;
+}
+
+.power-points {
+    color: #ffd700;
+    font-size: 1.1rem;
+    margin-left: 15px;
+}
+
+.power-ups-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.power-up-btn {
+    background-color: rgba(78, 205, 196, 0.2);
+    border: 2px solid #4ecdc4;
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 150px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.power-up-btn:hover:not(:disabled) {
+    background-color: rgba(78, 205, 196, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.power-up-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.power-up-btn.active {
+    background-color: rgba(255, 215, 0, 0.3);
+    border-color: #ffd700;
+}
+
+.power-up-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.power-up-cost {
+    font-size: 0.9rem;
+    color: #ffd700;
+}
+
+.power-up-desc {
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.cell.sonar-reveal {
+    background-color: #f39c12;
+    animation: sonarPulse 0.5s ease-in-out;
+}
+
+@keyframes sonarPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 /* Grid Size Classes */
 .board.grid-7x7 {
     grid-template-columns: repeat(7, 50px);

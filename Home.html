@@ -85,6 +85,21 @@
         </div>
         <div class="settings-container">
             <div class="setting-group">
+                <h3>Power-Ups</h3>
+                <div class="option-group">
+                    <label>
+                        <input type="radio" name="powerUps" value="off" checked>
+                        <span>Off - No power-ups</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="powerUps" value="on">
+                        <span>On - Enable power-ups</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="settings-container">
+            <div class="setting-group">
                 <h3>Ships</h3>
                 <div class="ships-config-group">
                     <div class="ship-config-item">
@@ -213,6 +228,31 @@
             <div class="board-wrapper">
                 <h3>Enemy Waters</h3>
                 <div id="enemy-board" class="board"></div>
+            </div>
+        </div>
+        <div id="power-ups-container" class="power-ups-container" style="display: none;">
+            <h3>Power-Ups <span id="power-points" class="power-points">Power Points: 2</span></h3>
+            <div class="power-ups-buttons">
+                <button id="sonar-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Sonar Pulse</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">Reveal 3x3 area</span>
+                </button>
+                <button id="extra-shot-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Extra Shot</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">+1 shot this turn</span>
+                </button>
+                <button id="cloak-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Cloak</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">Hide your feedback</span>
+                </button>
+                <button id="scope-btn" class="power-up-btn" disabled style="display: none;">
+                    <span class="power-up-name">Scope</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">See hit/miss feedback</span>
+                </button>
             </div>
         </div>
         <button id="end-turn-btn" class="main-btn" disabled>End Turn</button>
