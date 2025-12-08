@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game</title>
+    <link rel="stylesheet" href="Home.css">
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen active">
+        <h1>BATTLESHIP</h1>
+        <button id="start-game-btn" class="main-btn">Start Game</button>
+    </div>
+
+    <!-- Player Turn Screen (Blank with Play Button) -->
+    <div id="player-turn-screen" class="screen">
+        <h1 id="player-turn-text">Player 1 - Your Turn!</h1>
+        <button id="play-btn" class="main-btn">Play</button>
+    </div>
+
+    <!-- Ship Placement Screen -->
+    <div id="placement-screen" class="screen">
+        <h2 id="placement-title">Player 1 - Place Your Ships</h2>
+        <div class="game-info">
+            <p id="current-ship-info">Place your Carrier (5 cells)</p>
+            <button id="rotate-btn" class="control-btn">Rotate Ship</button>
+        </div>
+        <div class="board-container">
+            <div class="legend">
+                <h4>Legend:</h4>
+                <div class="legend-item">
+                    <div class="legend-square water"></div>
+                    <span>Water</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square ship"></div>
+                    <span>Your Ship</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square preview"></div>
+                    <span>Valid Placement</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square invalid"></div>
+                    <span>Invalid Placement</span>
+                </div>
+            </div>
+            <div id="placement-board" class="board"></div>
+            <div class="ship-selector">
+                <h4>Select Ship:</h4>
+                <div id="ship-list">
+                    <!-- Ships will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+        <button id="done-placement-btn" class="main-btn" disabled>Done</button>
+    </div>
+
+    <!-- Battle Screen -->
+    <div id="battle-screen" class="screen">
+        <h2 id="battle-title">Player 1 - Attack!</h2>
+        <div class="battle-container">
+            <div class="legend">
+                <h4>Legend:</h4>
+                <div class="legend-item">
+                    <div class="legend-square water"></div>
+                    <span>Water</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square ship"></div>
+                    <span>Your Ship</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square hit"></div>
+                    <span>Hit</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square miss"></div>
+                    <span>Miss</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square sunk"></div>
+                    <span>Sunk Ship</span>
+                </div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Your Board</h3>
+                <div id="own-board" class="board"></div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Enemy Waters</h3>
+                <div id="enemy-board" class="board"></div>
+            </div>
+        </div>
+        <button id="end-turn-btn" class="main-btn" disabled>End Turn</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen">
+        <h1 id="winner-text">Player 1 Wins!</h1>
+        <div class="stats">
+            <h2>Game Statistics</h2>
+            <div class="player-stats">
+                <h3>Player 1</h3>
+                <p>Shots Fired: <span id="p1-shots">0</span></p>
+                <p>Hits: <span id="p1-hits">0</span></p>
+                <p>Accuracy: <span id="p1-accuracy">0</span>%</p>
+            </div>
+            <div class="player-stats">
+                <h3>Player 2</h3>
+                <p>Shots Fired: <span id="p2-shots">0</span></p>
+                <p>Hits: <span id="p2-hits">0</span></p>
+                <p>Accuracy: <span id="p2-accuracy">0</span>%</p>
+            </div>
+        </div>
+        <button id="play-again-btn" class="main-btn">Play Again</button>
+    </div>
+
+    <script src="GameCode.js"></script>
+</body>
+</html>
