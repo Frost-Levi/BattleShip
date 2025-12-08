@@ -61,6 +61,46 @@
 
                 <div class="settings-container">
                     <div class="setting-group">
+                        <h3>Game Mode</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="gameMode" value="pvp" checked>
+                                <span>PvP - Fight Another Player</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="gameMode" value="ai">
+                                <span>AI - Fight Computer (Beta)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container" id="ai-difficulty-container" style="display: none;">
+                    <div class="setting-group">
+                        <h3>AI Difficulty</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="easy" checked>
+                                <span>Easy - Predictable patterns</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="medium">
+                                <span>Medium - Basic checkerboard</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="hard">
+                                <span>Hard - Optimal search</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="impossible">
+                                <span>Impossible - Always hits</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="setting-group">
                         <h3>Power-Ups</h3>
                         <div class="option-group">
                             <label>

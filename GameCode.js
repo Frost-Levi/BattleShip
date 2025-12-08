@@ -7,6 +7,9 @@ const gameState = {
     shootingRule: 'oneshot', // oneshot, twoshots, threeshots, tillmiss, shipfire
     fogOfWar: false, // true = only see sunk ships, false = see hit/miss
     powerUpsEnabled: false, // true = enable power-ups system
+    gameMode: 'pvp', // pvp or ai
+    aiDifficulty: 'easy', // easy, medium, hard, impossible
+    winner: null, // null = game ongoing, 'Player 1', 'Player 2', or 'AI' on victory
     activePowerUp: null, // Currently active power-up for the turn
     sonarMode: false, // If sonar is active waiting for selection
     shipCounts: {
@@ -40,7 +43,10 @@ const gameState = {
         cloakActive: false,
         scopeActive: false,
         extraShotUsed: false,
-        cloakedCells: [] // Array of [row, col] coordinates that are cloaked
+        cloakedCells: [],
+        aiLastHit: null, // {row, col} of last AI hit for hunt mode
+        aiTargetQueue: [], // Queue of coordinates to target around a hit
+        aiHuntDirection: null // Direction of hunt: 'horizontal', 'vertical', or null
     },
     shipTypes: [
         { name: 'Carrier', size: 5 },
@@ -84,6 +90,7 @@ function initGame() {
     gameState.phase = 'welcome';
     gameState.currentShipIndex = 0;
     gameState.isHorizontal = true;
+    gameState.winner = null;
     
     gameState.player1 = {
         board: createEmptyBoard(),
@@ -108,7 +115,10 @@ function initGame() {
         cloakActive: false,
         scopeActive: false,
         extraShotUsed: false,
-        cloakedCells: []
+        cloakedCells: [],
+        aiLastHit: null,
+        aiTargetQueue: [],
+        aiHuntDirection: null
     };
     
     showScreen('welcome');
@@ -421,6 +431,7 @@ function placeShip(cells, shipType) {
     const ship = {
         id: shipId,
         name: shipType.name,
+        size: shipType.size,
         cells: cells,
         hits: 0,
         sunk: false
@@ -685,8 +696,16 @@ function checkGameOver() {
 }
 
 function endGame() {
-    const winner = gameState.currentPlayer;
-    winnerText.textContent = `Player ${winner} Wins!`;
+    let winner;
+    
+    // Determine winner based on gameState.winner if set (AI mode), otherwise use currentPlayer
+    if (gameState.winner) {
+        winner = gameState.winner;
+    } else {
+        winner = `Player ${gameState.currentPlayer}`;
+    }
+    
+    winnerText.textContent = `${winner} Wins!`;
     
     document.getElementById('p1-shots').textContent = gameState.player1.shots;
     document.getElementById('p1-hits').textContent = gameState.player1.hits;
@@ -736,6 +755,26 @@ document.querySelectorAll('input[name="gridSize"]').forEach(radio => {
 document.querySelectorAll('input[name="fogOfWar"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.fogOfWar = e.target.value === 'on';
+    });
+});
+
+// Game Mode radio buttons
+document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.gameMode = e.target.value;
+        const aiDifficultyContainer = document.getElementById('ai-difficulty-container');
+        if (gameState.gameMode === 'ai') {
+            aiDifficultyContainer.style.display = 'block';
+        } else {
+            aiDifficultyContainer.style.display = 'none';
+        }
+    });
+});
+
+// AI Difficulty radio buttons
+document.querySelectorAll('input[name="aiDifficulty"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.aiDifficulty = e.target.value;
     });
 });
 
@@ -820,6 +859,271 @@ function updateLegend() {
     } else {
         normalLegend.style.display = 'block';
         fogOfWarLegend.style.display = 'none';
+    }
+}
+
+// AI System
+function canPlaceShipOnBoard(row, col, size, isHorizontal, board) {
+    const cells = getShipCells(row, col, size, isHorizontal);
+    for (let [r, c] of cells) {
+        if (r < 0 || r >= gameState.gridSize || c < 0 || c >= gameState.gridSize) {
+            return false;
+        }
+        if (board[r][c].hasShip) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function placeShipOnBoard(row, col, size, isHorizontal, shipId, board) {
+    const cells = getShipCells(row, col, size, isHorizontal);
+    cells.forEach(([r, c]) => {
+        board[r][c].hasShip = true;
+        board[r][c].shipId = shipId;
+    });
+}
+
+function placeAIShips() {
+    const aiBoard = gameState.player2.board;
+    const ships = [];
+    
+    for (let shipType of gameState.shipTypes) {
+        for (let i = 0; i < gameState.shipCounts[shipType.name]; i++) {
+            let placed = false;
+            while (!placed) {
+                const isHorizontal = Math.random() > 0.5;
+                const row = Math.floor(Math.random() * gameState.gridSize);
+                const col = Math.floor(Math.random() * gameState.gridSize);
+                
+                if (canPlaceShipOnBoard(row, col, shipType.size, isHorizontal, aiBoard)) {
+                    placeShipOnBoard(row, col, shipType.size, isHorizontal, ships.length, aiBoard);
+                    ships.push({
+                        name: shipType.name,
+                        size: shipType.size,
+                        hits: 0,
+                        sunk: false,
+                        cells: getShipCells(row, col, shipType.size, isHorizontal)
+                    });
+                    placed = true;
+                }
+            }
+        }
+    }
+    
+    gameState.player2.ships = ships;
+}
+
+function getAIShot() {
+    const aiData = gameState.player2;
+    const playerData = gameState.player1;
+    
+    let targetRow = -1, targetCol = -1;
+    
+    // If AI has a hunt queue from a previous hit, target around that hit
+    if (aiData.aiTargetQueue.length > 0) {
+        const target = aiData.aiTargetQueue.shift();
+        targetRow = target.row;
+        targetCol = target.col;
+    } else {
+        // No hunt queue, find new target based on difficulty
+        switch (gameState.aiDifficulty) {
+            case 'easy':
+                // Random with slight bias to edges and corners
+                if (Math.random() < 0.3) {
+                    targetRow = Math.random() < 0.5 ? 0 : gameState.gridSize - 1;
+                    targetCol = Math.random() < 0.5 ? 0 : gameState.gridSize - 1;
+                } else {
+                    targetRow = Math.floor(Math.random() * gameState.gridSize);
+                    targetCol = Math.floor(Math.random() * gameState.gridSize);
+                }
+                break;
+            
+            case 'medium':
+                // Checkerboard pattern - skip cells it likely already hit
+                do {
+                    targetRow = Math.floor(Math.random() * gameState.gridSize);
+                    targetCol = Math.floor(Math.random() * gameState.gridSize);
+                } while ((targetRow + targetCol) % 2 === 0 && Math.random() < 0.8);
+                break;
+            
+            case 'hard':
+                // Optimal search - prioritize cells near known hits
+                let foundPriority = false;
+                for (let r = 0; r < gameState.gridSize && !foundPriority; r++) {
+                    for (let c = 0; c < gameState.gridSize && !foundPriority; c++) {
+                        if (!playerData.board[r][c].isHit) {
+                            let nearHit = false;
+                            for (let dr = -1; dr <= 1; dr++) {
+                                for (let dc = -1; dc <= 1; dc++) {
+                                    const nr = r + dr, nc = c + dc;
+                                    if (nr >= 0 && nr < gameState.gridSize && nc >= 0 && nc < gameState.gridSize) {
+                                        if (playerData.board[nr][nc].isHit && playerData.board[nr][nc].hasShip) {
+                                            targetRow = r;
+                                            targetCol = c;
+                                            foundPriority = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!foundPriority) {
+                    targetRow = Math.floor(Math.random() * gameState.gridSize);
+                    targetCol = Math.floor(Math.random() * gameState.gridSize);
+                }
+                break;
+            
+            case 'impossible':
+                // Always find an unhit ship cell
+                let found = false;
+                for (let r = 0; r < gameState.gridSize && !found; r++) {
+                    for (let c = 0; c < gameState.gridSize && !found; c++) {
+                        if (!playerData.board[r][c].isHit && playerData.board[r][c].hasShip) {
+                            targetRow = r;
+                            targetCol = c;
+                            found = true;
+                        }
+                    }
+                }
+                // If no unhit ship cell found, pick random unhit cell
+                if (!found) {
+                    targetRow = Math.floor(Math.random() * gameState.gridSize);
+                    targetCol = Math.floor(Math.random() * gameState.gridSize);
+                }
+                break;
+        }
+    }
+    
+    return { row: targetRow, col: targetCol };
+}
+
+function executeAIShot() {
+    const playerData = gameState.player1;
+    let attempts = 0;
+    let shot;
+    
+    // Try to find a valid unshot cell
+    do {
+        shot = getAIShot();
+        
+        // Validate coordinates are within bounds
+        if (shot.row < 0 || shot.row >= gameState.gridSize || 
+            shot.col < 0 || shot.col >= gameState.gridSize) {
+            attempts++;
+            if (attempts > 100) {
+                return;
+            }
+            continue;
+        }
+        
+        const cellData = playerData.board[shot.row][shot.col];
+        
+        // Skip if already hit
+        if (cellData && !cellData.isHit) {
+            break; // Found a valid cell
+        }
+        
+        attempts++;
+        if (attempts > 100) {
+            // All cells already shot, game should be over
+            return;
+        }
+    } while (true);
+    
+    const cellData = playerData.board[shot.row][shot.col];
+    
+    cellData.isHit = true;
+    gameState.player2.shots++;
+    gameState.shotsThisTurn++;
+    gameState.lastShotHit = cellData.hasShip;
+    
+    if (cellData.hasShip) {
+        gameState.player2.hits++;
+        const ship = playerData.ships[cellData.shipId];
+        ship.hits++;
+        
+        // If we already have a hunt direction, continue in that direction
+        if (gameState.player2.aiHuntDirection) {
+            const lastHit = gameState.player2.aiLastHit;
+            if (gameState.player2.aiHuntDirection === 'horizontal') {
+                // Continue hunting horizontally
+                gameState.player2.aiTargetQueue.unshift(
+                    { row: lastHit.row, col: lastHit.col + 1 },
+                    { row: lastHit.row, col: lastHit.col - 1 }
+                );
+            } else if (gameState.player2.aiHuntDirection === 'vertical') {
+                // Continue hunting vertically
+                gameState.player2.aiTargetQueue.unshift(
+                    { row: lastHit.row + 1, col: lastHit.col },
+                    { row: lastHit.row - 1, col: lastHit.col }
+                );
+            }
+        } else if (gameState.player2.aiLastHit) {
+            // We have a previous hit but haven't determined direction yet
+            // Try to determine direction by checking which direction the hit came from
+            const lastHit = gameState.player2.aiLastHit;
+            const dr = shot.row - lastHit.row;
+            const dc = shot.col - lastHit.col;
+            
+            if (dr === 0 && dc !== 0) {
+                // Hit in horizontal direction
+                gameState.player2.aiHuntDirection = 'horizontal';
+                // Continue in both directions
+                gameState.player2.aiTargetQueue.unshift(
+                    { row: shot.row, col: shot.col + 1 },
+                    { row: lastHit.row, col: lastHit.col - 1 }
+                );
+            } else if (dc === 0 && dr !== 0) {
+                // Hit in vertical direction
+                gameState.player2.aiHuntDirection = 'vertical';
+                // Continue in both directions
+                gameState.player2.aiTargetQueue.unshift(
+                    { row: shot.row + 1, col: shot.col },
+                    { row: lastHit.row - 1, col: lastHit.col }
+                );
+            } else {
+                // First hit in this hunt, add adjacent cells
+                const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+                for (let [dr, dc] of directions) {
+                    const nr = shot.row + dr;
+                    const nc = shot.col + dc;
+                    if (nr >= 0 && nr < gameState.gridSize && nc >= 0 && nc < gameState.gridSize) {
+                        if (!playerData.board[nr][nc].isHit) {
+                            gameState.player2.aiTargetQueue.push({ row: nr, col: nc });
+                        }
+                    }
+                }
+            }
+        } else {
+            // First hit ever, add adjacent cells
+            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+            for (let [dr, dc] of directions) {
+                const nr = shot.row + dr;
+                const nc = shot.col + dc;
+                if (nr >= 0 && nr < gameState.gridSize && nc >= 0 && nc < gameState.gridSize) {
+                    if (!playerData.board[nr][nc].isHit) {
+                        gameState.player2.aiTargetQueue.push({ row: nr, col: nc });
+                    }
+                }
+            }
+        }
+        
+        gameState.player2.aiLastHit = { row: shot.row, col: shot.col };
+        
+        // Check if ship is sunk
+        console.log(`Ship ${ship.name}: ${ship.hits}/${ship.size} hits`);
+        if (ship.hits === ship.size) {
+            ship.sunk = true;
+            console.log(`Ship ${ship.name} SUNK!`);
+            gameState.player2.aiTargetQueue = []; // Clear hunt queue when ship sinks
+            gameState.player2.aiHuntDirection = null; // Reset hunt direction
+            if (gameState.powerUpsEnabled) {
+                gameState.player2.powerPoints++;
+            }
+        }
     }
 }
 
@@ -979,11 +1283,19 @@ document.addEventListener('keydown', (e) => {
 
 donePlacementBtn.addEventListener('click', () => {
     if (gameState.currentPlayer === 1) {
-        // Player 1 done, now Player 2's turn
-        gameState.currentPlayer = 2;
-        gameState.currentShipIndex = 0;
-        gameState.isHorizontal = true;
-        showScreen('playerTurn');
+        if (gameState.gameMode === 'ai') {
+            // Player 1 done, place AI ships
+            placeAIShips();
+            // Start battle
+            gameState.currentPlayer = 1;
+            showScreen('playerTurn');
+        } else {
+            // Player 1 done, now Player 2's turn
+            gameState.currentPlayer = 2;
+            gameState.currentShipIndex = 0;
+            gameState.isHorizontal = true;
+            showScreen('playerTurn');
+        }
     } else {
         // Both players done, start battle
         gameState.currentPlayer = 1;
@@ -998,11 +1310,86 @@ endTurnBtn.addEventListener('click', () => {
     currentPlayerData.scopeActive = false;
     currentPlayerData.cloakActive = false; // Reset cloak after turn ends
     
-    // Switch players
-    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-    endTurnBtn.disabled = true;
-    showScreen('playerTurn');
+    if (gameState.gameMode === 'ai' && gameState.currentPlayer === 1) {
+        // Player's turn just ended, execute AI shots
+        // Reset AI shot tracking for this turn
+        gameState.shotsThisTurn = 0;
+        gameState.lastShotHit = true; // Start with true so tillmiss can shoot first
+        const maxShots = getMaxShotsForAI();
+        
+        for (let i = 0; i < maxShots; i++) {
+            executeAIShot();
+            
+            // Check if AI should shoot more
+            if (!canAIShootMore()) break;
+        }
+        
+        // Check after all shots if player is sunk
+        console.log('Checking victory condition...');
+        console.log('Player 1 ships:', gameState.player1.ships.map(s => ({
+            name: s.name,
+            size: s.size,
+            hits: s.hits,
+            sunk: s.sunk
+        })));
+        
+        const allPlayerShipsSunk = gameState.player1.ships.every(ship => ship.sunk);
+        console.log('All ships sunk?', allPlayerShipsSunk);
+        
+        if (allPlayerShipsSunk) {
+            gameState.winner = 'AI';
+            // Show final board state before ending
+            renderBattleBoards();
+            setTimeout(() => endGame(), 500);
+            return;
+        }
+        
+        // Reset AI shots counter for next player turn
+        gameState.shotsThisTurn = 0;
+        
+        // Show updated board with AI's shots
+        showScreen('battle');
+        endTurnBtn.disabled = true;
+    } else {
+        // Switch to next player or show privacy screen
+        // Check if current player (about to switch from) has won
+        const currentPlayerOpponent = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+        const allEnemyShipsSunk = currentPlayerOpponent.ships.every(ship => ship.sunk);
+        
+        if (allEnemyShipsSunk) {
+            gameState.winner = gameState.currentPlayer === 1 ? 'Player 1' : 'Player 2';
+            endGame();
+            return;
+        }
+        
+        gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+        endTurnBtn.disabled = true;
+        showScreen(gameState.gameMode === 'ai' ? 'battle' : 'playerTurn');
+    }
 });
+
+function getMaxShotsForAI() {
+    switch (gameState.shootingRule) {
+        case 'oneshot': return 1;
+        case 'twoshots': return 2;
+        case 'threeshots': return 3;
+        case 'tillmiss': return 100; // Will stop when miss
+        case 'shipfire': return gameState.player2.ships.filter(ship => !ship.sunk).length;
+        default: return 1;
+    }
+}
+
+function canAIShootMore() {
+    let maxShots = getMaxShotsForAI();
+    
+    if (gameState.shootingRule === 'tillmiss') {
+        // For tillmiss, continue if last shot was a hit
+        // Stop if last shot was a miss
+        return gameState.lastShotHit === true;
+    }
+    
+    return gameState.shotsThisTurn < maxShots;
+}
 
 playAgainBtn.addEventListener('click', () => {
     initGame();
