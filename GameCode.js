@@ -2,7 +2,10 @@
 const gameState = {
     currentPlayer: 1,
     phase: 'welcome', // welcome, settings, placement, battle, gameover
+    gridSize: 10, // 7, 10, 12, or 15
+    maxShips: 10, // Dynamic based on grid size
     shootingRule: 'oneshot', // oneshot, twoshots, threeshots, tillmiss, shipfire
+    fogOfWar: false, // true = only see sunk ships, false = see hit/miss
     shipCounts: {
         'Carrier': 1,
         'Battleship': 1,
@@ -84,12 +87,12 @@ function initGame() {
     showScreen('welcome');
 }
 
-// Create empty 10x10 board
-function createEmptyBoard() {
+// Create empty board with specified grid size
+function createEmptyBoard(size = gameState.gridSize) {
     const board = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < size; i++) {
         board[i] = [];
-        for (let j = 0; j < 10; j++) {
+        for (let j = 0; j < size; j++) {
             board[i][j] = {
                 hasShip: false,
                 isHit: false,
@@ -131,6 +134,7 @@ function showScreen(screenName) {
             gameState.shotsThisTurn = 0;
             gameState.lastShotHit = false;
             battleScreen.classList.add('active');
+            updateLegend();
             updateBattleTitle();
             renderBattleBoards();
             break;
@@ -255,10 +259,14 @@ function renderPlacementBoard() {
     const placementBoard = document.getElementById('placement-board');
     placementBoard.innerHTML = '';
     
+    // Remove old grid size classes and add new one
+    placementBoard.classList.remove('grid-7x7', 'grid-10x10', 'grid-12x12', 'grid-15x15');
+    placementBoard.classList.add(`grid-${gameState.gridSize}x${gameState.gridSize}`);
+    
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
     
-    for (let row = 0; row < 10; row++) {
-        for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < gameState.gridSize; row++) {
+        for (let col = 0; col < gameState.gridSize; col++) {
             const cell = document.createElement('div');
             cell.classList.add('cell');
             cell.dataset.row = row;
@@ -363,7 +371,7 @@ function isValidPlacement(cells) {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
     
     for (let [row, col] of cells) {
-        if (row < 0 || row >= 10 || col < 0 || col >= 10) {
+        if (row < 0 || row >= gameState.gridSize || col < 0 || col >= gameState.gridSize) {
             return false;
         }
         if (currentPlayerData.board[row][col].hasShip) {
@@ -398,12 +406,16 @@ function renderBattleBoards() {
     const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
     const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
     
+    const gridSizeClass = `grid-${gameState.gridSize}x${gameState.gridSize}`;
+    
     // Render own board (with ships visible)
     const ownBoard = document.getElementById('own-board');
     ownBoard.innerHTML = '';
+    ownBoard.classList.remove('grid-7x7', 'grid-10x10', 'grid-12x12', 'grid-15x15');
+    ownBoard.classList.add(gridSizeClass);
     
-    for (let row = 0; row < 10; row++) {
-        for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < gameState.gridSize; row++) {
+        for (let col = 0; col < gameState.gridSize; col++) {
             const cell = document.createElement('div');
             cell.classList.add('cell');
             
@@ -431,9 +443,11 @@ function renderBattleBoards() {
     // Render enemy board (ships hidden)
     const enemyBoard = document.getElementById('enemy-board');
     enemyBoard.innerHTML = '';
+    enemyBoard.classList.remove('grid-7x7', 'grid-10x10', 'grid-12x12', 'grid-15x15');
+    enemyBoard.classList.add(gridSizeClass);
     
-    for (let row = 0; row < 10; row++) {
-        for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < gameState.gridSize; row++) {
+        for (let col = 0; col < gameState.gridSize; col++) {
             const cell = document.createElement('div');
             cell.classList.add('cell');
             cell.dataset.row = row;
@@ -442,13 +456,30 @@ function renderBattleBoards() {
             const cellData = enemyPlayerData.board[row][col];
             
             if (cellData.isHit) {
-                cell.classList.add(cellData.hasShip ? 'hit' : 'miss');
-                
-                // Check if ship is sunk
-                if (cellData.hasShip && cellData.shipId !== null) {
-                    const ship = enemyPlayerData.ships[cellData.shipId];
-                    if (ship.sunk) {
-                        cell.classList.add('sunk');
+                // In fog of war, only show sunk ships with a marker for shot squares
+                if (gameState.fogOfWar) {
+                    if (cellData.hasShip && cellData.shipId !== null) {
+                        const ship = enemyPlayerData.ships[cellData.shipId];
+                        if (ship.sunk) {
+                            cell.classList.add('sunk');
+                        } else {
+                            // Ship hit but not sunk - show marker
+                            cell.classList.add('shot-marker');
+                        }
+                    } else {
+                        // Water hit - show marker
+                        cell.classList.add('shot-marker');
+                    }
+                } else {
+                    // Normal mode: show all hits and misses
+                    cell.classList.add(cellData.hasShip ? 'hit' : 'miss');
+                    
+                    // Check if ship is sunk
+                    if (cellData.hasShip && cellData.shipId !== null) {
+                        const ship = enemyPlayerData.ships[cellData.shipId];
+                        if (ship.sunk) {
+                            cell.classList.add('sunk');
+                        }
                     }
                 }
             } else if (canShootMore()) {
@@ -569,6 +600,22 @@ document.querySelectorAll('input[name="shootingRules"]').forEach(radio => {
     });
 });
 
+// Grid size radio buttons
+document.querySelectorAll('input[name="gridSize"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.gridSize = parseInt(e.target.value);
+        gameState.maxShips = parseInt(e.target.dataset.maxShips);
+        updateShipCountDisplay();
+    });
+});
+
+// Fog of War radio buttons
+document.querySelectorAll('input[name="fogOfWar"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        gameState.fogOfWar = e.target.value === 'on';
+    });
+});
+
 // Ship count inputs
 document.querySelectorAll('.ship-count').forEach(input => {
     input.addEventListener('change', (e) => {
@@ -588,10 +635,10 @@ function updateShipCountDisplay() {
     const shipCountDisplay = document.getElementById('ship-count-display');
     const shipErrorMessage = document.getElementById('ship-error-message');
     
-    shipCountDisplay.textContent = `Total Ships: ${totalShips}/10`;
+    shipCountDisplay.textContent = `Total Ships: ${totalShips}/${gameState.maxShips}`;
     
-    // Check for invalid settings
-    const isValid = totalShips > 0 && totalShips <= 10;
+    // Check for invalid settings - must have at least 1 ship and not exceed maxShips for grid
+    const isValid = totalShips > 0 && totalShips <= gameState.maxShips;
     
     if (!isValid) {
         shipErrorMessage.style.display = 'block';
@@ -630,6 +677,19 @@ function updateBattleTitle() {
         battleTitle.textContent = `Player ${gameState.currentPlayer} - Attack! (Shot: ${shots + 1})`;
     } else {
         battleTitle.textContent = `Player ${gameState.currentPlayer} - Attack! (${shots}/${maxShots})`;
+    }
+}
+
+function updateLegend() {
+    const normalLegend = document.getElementById('legend-normal');
+    const fogOfWarLegend = document.getElementById('legend-fog-of-war');
+    
+    if (gameState.fogOfWar) {
+        normalLegend.style.display = 'none';
+        fogOfWarLegend.style.display = 'block';
+    } else {
+        normalLegend.style.display = 'block';
+        fogOfWarLegend.style.display = 'none';
     }
 }
 

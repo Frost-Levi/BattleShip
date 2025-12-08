@@ -19,6 +19,29 @@
         <h2>Game Settings</h2>
         <div class="settings-container">
             <div class="setting-group">
+                <h3>Grid Size</h3>
+                <div class="option-group">
+                    <label>
+                        <input type="radio" name="gridSize" value="7" data-max-ships="7">
+                        <span>7x7 (Max 7 ships)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="gridSize" value="10" checked data-max-ships="10">
+                        <span>10x10 (Max 10 ships)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="gridSize" value="12" data-max-ships="12">
+                        <span>12x12 (Max 12 ships)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="gridSize" value="15" data-max-ships="15">
+                        <span>15x15 (Max 15 ships)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="settings-container">
+            <div class="setting-group">
                 <h3>Shooting Rules</h3>
                 <div class="option-group">
                     <label>
@@ -44,6 +67,21 @@
                 </div>
             </div>
             <p id="rule-description" class="rule-description">Get one shot per turn</p>
+        </div>
+        <div class="settings-container">
+            <div class="setting-group">
+                <h3>Fog of War</h3>
+                <div class="option-group">
+                    <label>
+                        <input type="radio" name="fogOfWar" value="off" checked>
+                        <span>Off - See hit/miss feedback</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="fogOfWar" value="on">
+                        <span>On - Only see sunk ships</span>
+                    </label>
+                </div>
+            </div>
         </div>
         <div class="settings-container">
             <div class="setting-group">
@@ -127,25 +165,45 @@
         <div class="battle-container">
             <div class="legend">
                 <h4>Legend:</h4>
-                <div class="legend-item">
-                    <div class="legend-square water"></div>
-                    <span>Water</span>
+                <div id="legend-normal" style="display: none;">
+                    <div class="legend-item">
+                        <div class="legend-square water"></div>
+                        <span>Water</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square ship"></div>
+                        <span>Your Ship</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square hit"></div>
+                        <span>Hit</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square miss"></div>
+                        <span>Miss</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square sunk"></div>
+                        <span>Sunk Ship</span>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-square ship"></div>
-                    <span>Your Ship</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-square hit"></div>
-                    <span>Hit</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-square miss"></div>
-                    <span>Miss</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-square sunk"></div>
-                    <span>Sunk Ship</span>
+                <div id="legend-fog-of-war" style="display: none;">
+                    <div class="legend-item">
+                        <div class="legend-square water"></div>
+                        <span>Water (Not shot)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square ship"></div>
+                        <span>Your Ship</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square shot-marker"></div>
+                        <span>Shot (Hit or Miss)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square sunk"></div>
+                        <span>Sunk Ship</span>
+                    </div>
                 </div>
             </div>
             <div class="board-wrapper">
