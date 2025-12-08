@@ -461,6 +461,11 @@ h3 {
         align-items: center;
     }
     
+    .settings-wrapper {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
     h1 {
         font-size: 2.5rem;
     }
@@ -485,18 +490,41 @@ h3 {
     background-color: rgba(0, 0, 0, 0.3);
     padding: 30px;
     border-radius: 10px;
-    max-width: 500px;
     margin: 20px 0;
 }
 
+.settings-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 30px 0;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.settings-left,
+.settings-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
 .setting-group {
-    margin-bottom: 25px;
+    margin-bottom: 0;
 }
 
 .setting-group h3 {
     color: #4ecdc4;
     margin-bottom: 15px;
-    text-align: center;
+    text-align: left;
 }
 
 .option-group {
