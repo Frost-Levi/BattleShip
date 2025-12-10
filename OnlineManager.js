@@ -9,11 +9,13 @@ class OnlineManager {
     constructor() {
         this.socket = null;
         this.roomId = null;
-        this.playerNumber = null; // 1 or 2
+        this.playerNumber = null; // 1 or 2 - whose turn it is
         this.myPlayerNumber = null; // Which player am I (1 or 2)
         this.isOnline = false;
         this.isHost = false;
         this.serverUrl = this.getServerUrl();
+        this.isReady = false;
+        this.opponentReady = false;
     }
 
     getServerUrl() {
@@ -47,16 +49,20 @@ class OnlineManager {
             this.playerNumber = 1; // Currently player 1's turn
             this.isHost = true;
             this.isOnline = true;
+            this.isReady = false;
+            this.opponentReady = false;
             
             // Set game state to player 1
             gameState.currentPlayer = 1;
             
-            // Show room code to player
-            alert(`Room created! Room Code: ${data.roomId}\nShare this code with your opponent.`);
-            
             // Move to settings screen
             gameState.gameMode = 'online';
             showScreen('settings');
+            
+            // Show room code screen
+            setTimeout(() => {
+                showRoomCodeScreen(data.roomId);
+            }, 100);
         });
 
         this.socket.on('join-error', (message) => {
@@ -67,6 +73,8 @@ class OnlineManager {
             this.myPlayerNumber = 2; // I am Player 2
             this.playerNumber = 1; // Player 1 starts
             this.isOnline = true;
+            this.isReady = false;
+            this.opponentReady = true;
             
             // Update game settings from host
             gameState.gridSize = data.settings.gridSize;
@@ -79,16 +87,31 @@ class OnlineManager {
                 gameState.shipCounts[shipName] = data.settings.shipCounts[shipName];
             });
             
-            // Start placement - Player 2 starts placing first
-            gameState.currentPlayer = 2;
+            // Show ready screen
+            showScreen('readyUp');
+        });
+        
+        this.socket.on('opponent-ready', () => {
+            this.opponentReady = true;
+            updateReadyStatus();
+        });
+        
+        this.socket.on('both-players-confirmed', () => {
+            // Start placement
+            gameState.currentPlayer = this.myPlayerNumber;
             gameState.phase = 'placement';
             gameState.currentShipIndex = 0;
             gameState.isHorizontal = true;
-            
             showScreen('playerTurn');
         });
 
-        this.socket.on('both-players-ready', (data) => {
+        this.socket.on('placement-done', (data) => {
+            // Other player finished placement
+            showScreen('waitingForPlacement');
+        });
+        
+        this.socket.on('both-players-placed', (data) => {
+            // Both players finished placement, start battle
             gameState.phase = 'battle';
             gameState.currentPlayer = 1;
             showScreen('battle');
@@ -134,11 +157,14 @@ class OnlineManager {
 
         this.socket.on('turn-ended', (data) => {
             gameState.currentPlayer = data.nextPlayer;
-            updateBattleTitle();
             
-            const playerIndicator = document.getElementById('player-indicator');
-            if (playerIndicator) {
-                playerIndicator.textContent = `Player ${data.nextPlayer}'s Turn`;
+            // If it's opponent's turn, show waiting screen
+            if (data.nextPlayer !== this.myPlayerNumber) {
+                showScreen('waitingForTurn');
+            } else {
+                // It's our turn, show battle screen
+                updateBattleTitle();
+                showScreen('battle');
             }
         });
 
@@ -167,6 +193,17 @@ class OnlineManager {
             powerUpsEnabled: settings.powerUpsEnabled,
             shipCounts: settings.shipCounts
         });
+    }
+    
+    confirmReady() {
+        if (!this.socket || !this.roomId) return;
+        this.isReady = true;
+        this.socket.emit('player-ready', {});
+    }
+    
+    sendPlacementDone() {
+        if (!this.socket || !this.roomId) return;
+        this.socket.emit('placement-done', {});
     }
 
     joinRoom(roomId) {

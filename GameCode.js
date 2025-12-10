@@ -68,6 +68,10 @@ const placementScreen = document.getElementById('placement-screen');
 const battleScreen = document.getElementById('battle-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const onlineMenuScreen = document.getElementById('online-menu-screen');
+const roomCodeScreen = document.getElementById('room-code-screen');
+const readyUpScreen = document.getElementById('ready-up-screen');
+const waitingForPlacementScreen = document.getElementById('waiting-for-placement-screen');
+const waitingForTurnScreen = document.getElementById('waiting-for-turn-screen');
 
 const startGameBtn = document.getElementById('start-game-btn');
 const settingsBtn = document.getElementById('settings-btn');
@@ -82,6 +86,11 @@ const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const backFromOnlineBtn = document.getElementById('back-from-online-btn');
 const roomCodeInput = document.getElementById('room-code-input');
+const copyCodeBtn = document.getElementById('copy-code-btn');
+const readySettingsBtn = document.getElementById('ready-settings-btn');
+const readyConfirmBtn = document.getElementById('ready-confirm-btn');
+const backFromReadyBtn = document.getElementById('back-to-online-from-ready-btn');
+const backFromRoomCodeBtn = document.getElementById('back-to-online-btn');
 
 const playerTurnText = document.getElementById('player-turn-text');
 const placementTitle = document.getElementById('placement-title');
@@ -148,7 +157,7 @@ function createEmptyBoard(size = gameState.gridSize) {
 
 // Screen management
 function showScreen(screenName) {
-    const screens = [welcomeScreen, settingsScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen, onlineMenuScreen];
+    const screens = [welcomeScreen, settingsScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen, onlineMenuScreen, roomCodeScreen, readyUpScreen, waitingForPlacementScreen, waitingForTurnScreen];
     screens.forEach(screen => screen.classList.remove('active'));
     
     switch(screenName) {
@@ -163,6 +172,23 @@ function showScreen(screenName) {
         case 'settings':
             gameState.phase = 'settings';
             settingsScreen.classList.add('active');
+            
+            // Show Ready button if online mode
+            if (gameState.gameMode === 'online' && onlineManager.isHost) {
+                readySettingsBtn.style.display = 'block';
+            } else {
+                readySettingsBtn.style.display = 'none';
+            }
+            break;
+        case 'readyUp':
+            readyUpScreen.classList.add('active');
+            updateReadyStatus();
+            break;
+        case 'waitingForPlacement':
+            waitingForPlacementScreen.classList.add('active');
+            break;
+        case 'waitingForTurn':
+            waitingForTurnScreen.classList.add('active');
             break;
         case 'playerTurn':
             playerTurnScreen.classList.add('active');
@@ -1359,7 +1385,8 @@ donePlacementBtn.addEventListener('click', () => {
         } else if (gameState.gameMode === 'online') {
             // Player 1 done, send board to server
             onlineManager.updateBoard(gameState.player1.board, gameState.player1.ships);
-            showScreen('playerTurn');
+            onlineManager.sendPlacementDone();
+            showScreen('waitingForPlacement');
         } else {
             // Player 1 done, now Player 2's turn
             gameState.currentPlayer = 2;
@@ -1371,6 +1398,8 @@ donePlacementBtn.addEventListener('click', () => {
         if (gameState.gameMode === 'online') {
             // Player 2 done, send board to server
             onlineManager.updateBoard(gameState.player2.board, gameState.player2.ships);
+            onlineManager.sendPlacementDone();
+            showScreen('waitingForPlacement');
         } else {
             // Both players done, start battle
             gameState.currentPlayer = 1;
@@ -1515,6 +1544,69 @@ joinRoomBtn.addEventListener('click', () => {
     gameState.gameMode = 'online';
     onlineManager.joinRoom(roomCode);
 });
+
+// Ready button listeners
+readySettingsBtn.addEventListener('click', () => {
+    const settings = {
+        gridSize: gameState.gridSize,
+        shootingRule: gameState.shootingRule,
+        fogOfWar: gameState.fogOfWar,
+        powerUpsEnabled: gameState.powerUpsEnabled,
+        shipCounts: gameState.shipCounts
+    };
+    
+    onlineManager.confirmReady();
+    readySettingsBtn.disabled = true;
+    readySettingsBtn.textContent = 'Waiting for Opponent...';
+});
+
+readyConfirmBtn.addEventListener('click', () => {
+    onlineManager.confirmReady();
+    readyConfirmBtn.disabled = true;
+    readyConfirmBtn.textContent = 'Ready!';
+    updateReadyStatus();
+});
+
+copyCodeBtn.addEventListener('click', () => {
+    const roomCode = document.getElementById('room-code-text').textContent;
+    navigator.clipboard.writeText(roomCode).then(() => {
+        alert('Room code copied to clipboard!');
+    });
+});
+
+backFromReadyBtn.addEventListener('click', () => {
+    showScreen('onlineMenu');
+});
+
+backFromRoomCodeBtn.addEventListener('click', () => {
+    showScreen('onlineMenu');
+});
+
+function showRoomCodeScreen(roomCode) {
+    document.getElementById('room-code-text').textContent = roomCode;
+    showScreen('roomCode');
+}
+
+function updateReadyStatus() {
+    const youStatus = document.getElementById('you-ready-status');
+    const opponentStatus = document.getElementById('opponent-ready-status');
+    
+    if (onlineManager.isReady) {
+        youStatus.textContent = 'Ready ✓';
+        youStatus.style.color = '#4CAF50';
+    } else {
+        youStatus.textContent = 'Not Ready';
+        youStatus.style.color = '#f44336';
+    }
+    
+    if (onlineManager.opponentReady) {
+        opponentStatus.textContent = 'Ready ✓';
+        opponentStatus.style.color = '#4CAF50';
+    } else {
+        opponentStatus.textContent = 'Not Ready';
+        opponentStatus.style.color = '#f44336';
+    }
+}
 
 // Initialize on load
 initGame();

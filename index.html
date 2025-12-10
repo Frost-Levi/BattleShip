@@ -30,6 +30,65 @@
         </div>
     </div>
 
+    <!-- Room Code Display Screen -->
+    <div id="room-code-screen" class="screen">
+        <h2>Room Code</h2>
+        <div style="max-width: 400px; margin: 0 auto; text-align: center;">
+            <p>Share this code with your opponent:</p>
+            <div id="room-code-display" style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin: 20px 0; border: 2px solid #20a39e;">
+                <div id="room-code-text" style="font-size: 32px; font-weight: bold; color: #20a39e; letter-spacing: 5px; margin-bottom: 10px;">XXXX</div>
+                <button id="copy-code-btn" class="main-btn" style="width: 100%;">Copy Code</button>
+            </div>
+            <p>Waiting for opponent to join...</p>
+            <div id="opponent-status" style="margin-top: 20px; color: #888;">Opponent: Not joined</div>
+            <button id="back-to-online-btn" class="main-btn secondary" style="margin-top: 20px;">Back</button>
+        </div>
+    </div>
+    
+    <!-- Ready Up Screen -->
+    <div id="ready-up-screen" class="screen">
+        <h2>Game Settings</h2>
+        <div style="max-width: 500px; margin: 0 auto;">
+            <div style="background: rgba(32, 163, 158, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <p><strong>Grid Size:</strong> <span id="ready-grid-size">10x10</span></p>
+                <p><strong>Shooting Rule:</strong> <span id="ready-shooting-rule">One Shot</span></p>
+                <p><strong>Fog of War:</strong> <span id="ready-fog-of-war">Off</span></p>
+                <p><strong>Power-Ups:</strong> <span id="ready-power-ups">Off</span></p>
+            </div>
+            
+            <div style="background: rgba(32, 163, 158, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <p><strong>You:</strong> <span id="you-ready-status" style="color: #f44336;">Not Ready</span></p>
+                <p><strong>Opponent:</strong> <span id="opponent-ready-status" style="color: #f44336;">Not Ready</span></p>
+            </div>
+            
+            <button id="ready-confirm-btn" class="main-btn" style="width: 100%; margin-bottom: 10px;">I'm Ready</button>
+            <button id="back-to-online-from-ready-btn" class="main-btn secondary" style="width: 100%;">Back</button>
+        </div>
+    </div>
+    
+    <!-- Waiting for Placement Screen -->
+    <div id="waiting-for-placement-screen" class="screen">
+        <h2>Waiting for Opponent</h2>
+        <div style="max-width: 400px; margin: 0 auto; text-align: center;">
+            <p style="font-size: 18px; margin: 30px 0;">You've finished placing your ships!</p>
+            <p style="color: #888;">Waiting for your opponent to finish placing their ships...</p>
+            <div style="margin: 40px 0;">
+                <div class="loading-spinner" style="width: 50px; height: 50px; border: 4px solid #20a39e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Waiting for Turn Screen -->
+    <div id="waiting-for-turn-screen" class="screen">
+        <h2>Waiting for Opponent's Turn</h2>
+        <div style="max-width: 400px; margin: 0 auto; text-align: center;">
+            <p style="font-size: 18px; margin: 30px 0;">Your opponent is taking their turn...</p>
+            <div style="margin: 40px 0;">
+                <div class="loading-spinner" style="width: 50px; height: 50px; border: 4px solid #20a39e; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Screen -->
     <div id="settings-screen" class="screen">
         <h2>Game Settings</h2>
@@ -196,6 +255,7 @@
         
         <div class="settings-buttons">
             <button id="back-to-welcome-btn" class="main-btn">Back</button>
+            <button id="ready-settings-btn" class="main-btn" style="display: none;">Ready Up</button>
         </div>
     </div>
 

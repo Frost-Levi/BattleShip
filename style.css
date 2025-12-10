@@ -727,6 +727,10 @@ h3 {
     50% { opacity: 0.5; }
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Grid Size Classes */
 .board.grid-7x7 {
     grid-template-columns: repeat(7, 50px);
