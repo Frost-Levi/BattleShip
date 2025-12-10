@@ -71,6 +71,7 @@ class OnlineManager {
         
         this.socket.on('opponent-joined', () => {
             this.opponentConnected = true;
+            // Don't change screen - host stays on settings screen
             updateReadyStatus();
         });
 
@@ -93,7 +94,7 @@ class OnlineManager {
                 gameState.shipCounts[shipName] = data.settings.shipCounts[shipName];
             });
             
-            // Show ready screen
+            // Show ready screen for Player 2 only
             showScreen('readyUp');
             updateReadyStatus();
         });

@@ -26,6 +26,8 @@ class GameRoom {
         this.hostId = hostId;
         this.guestId = null;
         this.settings = settings;
+        this.player1Ready = false;
+        this.player2Ready = false;
         this.gameState = {
             phase: 'placement', // placement, battle, gameover
             currentPlayer: 1,
@@ -57,6 +59,15 @@ class GameRoom {
         return this.guestId !== null && 
                this.gameState.player1.shipsPlaced && 
                this.gameState.player2.shipsPlaced;
+    }
+
+    areBothPlayersConfirmedReady() {
+        return this.player1Ready && this.player2Ready && this.guestId !== null;
+    }
+
+    resetReadyFlags() {
+        this.player1Ready = false;
+        this.player2Ready = false;
     }
 }
 
@@ -107,6 +118,38 @@ io.on('connection', (socket) => {
         });
         
         console.log('Player joined room:', roomId, 'player:', socket.id);
+    });
+
+    // Player confirms ready from settings screen
+    socket.on('player-ready', () => {
+        const playerInfo = players.get(socket.id);
+        if (!playerInfo) return;
+        
+        const room = games.get(playerInfo.roomId);
+        if (!room) return;
+        
+        const playerNumber = playerInfo.playerNumber;
+        if (playerNumber === 1) {
+            room.player1Ready = true;
+        } else {
+            room.player2Ready = true;
+        }
+        
+        // Notify the other player that this player is ready
+        const otherPlayerId = playerNumber === 1 ? room.guestId : room.hostId;
+        if (otherPlayerId) {
+            io.to(playerInfo.roomId).emit('opponent-ready', {
+                playerNumber: playerNumber
+            });
+        }
+        
+        // Check if both players have confirmed ready
+        if (room.areBothPlayersConfirmedReady()) {
+            io.to(playerInfo.roomId).emit('both-players-confirmed', {
+                phase: 'placement'
+            });
+            room.resetReadyFlags();
+        }
     });
 
     // Get room info
