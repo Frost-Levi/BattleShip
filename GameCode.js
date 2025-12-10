@@ -663,9 +663,12 @@ function renderBattleBoards() {
 function handleAttack(e) {
     // In online mode, only allow shooting on your turn
     if (gameState.isOnline && gameState.currentPlayer !== onlineManager.myPlayerNumber) {
+        console.log('Not your turn! Current player:', gameState.currentPlayer, 'My player:', onlineManager.myPlayerNumber);
         alert('It\'s not your turn!');
         return;
     }
+    
+    console.log('Attack clicked - isOnline:', gameState.isOnline, 'currentPlayer:', gameState.currentPlayer, 'myPlayerNumber:', onlineManager.myPlayerNumber);
     
     // Handle sonar mode
     if (gameState.sonarMode) {
@@ -737,6 +740,8 @@ function handleAttack(e) {
     gameState.shotsThisTurn++;
     gameState.lastShotHit = cellData.hasShip;
     
+    console.log(`Shot at [${row}, ${col}] - Hit: ${cellData.hasShip}`);
+    
     // If cloak is active, mark this cell as cloaked (so the current player can't see feedback)
     if (currentPlayerData.cloakActive) {
         currentPlayerData.cloakedCells.push([row, col]);
@@ -747,8 +752,11 @@ function handleAttack(e) {
         const ship = enemyPlayerData.ships[cellData.shipId];
         ship.hits++;
         
+        console.log(`HIT! Ship ${ship.name}: ${ship.hits}/${ship.size} hits`);
+        
         if (ship.hits === ship.cells.length) {
             ship.sunk = true;
+            console.log(`Ship ${ship.name} SUNK!`);
             alert(`You sunk the enemy's ${ship.name}!`);
             // Award power point for sinking a ship
             if (gameState.powerUpsEnabled) {
@@ -768,6 +776,7 @@ function handleAttack(e) {
     
     // For online mode, send shot to server
     if (gameState.gameMode === 'online') {
+        console.log('Sending shot to server:', {row, col});
         onlineManager.shoot(row, col);
     }
     
@@ -1559,6 +1568,7 @@ endTurnBtn.addEventListener('click', () => {
         // Switch to next player or show privacy screen
         if (gameState.gameMode === 'online') {
             // For online, just send end-turn signal to server
+            console.log('Sending end-turn to server');
             onlineManager.endTurn();
             endTurnBtn.disabled = true;
         } else {

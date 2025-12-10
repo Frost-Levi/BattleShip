@@ -162,6 +162,7 @@ class OnlineManager {
         });
 
         this.socket.on('shot-result', (data) => {
+            console.log('Shot result received:', {row: data.row, col: data.col, hit: data.isHit, shipSunk: data.shipSunk});
             const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
             const cellData = enemyPlayerData.board[data.row][data.col];
             
@@ -190,25 +191,31 @@ class OnlineManager {
                 setTimeout(() => endGame(), 500);
             } else if (data.nextPlayer !== this.playerNumber) {
                 // It's opponent's turn
+                console.log('Opponent\'s turn after shot');
                 endTurnBtn.disabled = true;
                 updateBattleTitle();
             } else {
                 // It's your turn
+                console.log('Your turn after shot');
                 endTurnBtn.disabled = false;
                 updateBattleTitle();
             }
         });
 
         this.socket.on('turn-ended', (data) => {
+            console.log('Turn ended. Next player:', data.nextPlayer, 'My player:', this.myPlayerNumber);
             gameState.currentPlayer = data.nextPlayer;
             
             // If it's opponent's turn, show waiting screen
             if (data.nextPlayer !== this.myPlayerNumber) {
+                console.log('Opponent\'s turn - showing waiting screen');
                 showScreen('waitingForTurn');
             } else {
                 // It's our turn, show battle screen
+                console.log('Your turn - showing battle screen');
                 updateBattleTitle();
                 showScreen('battle');
+                renderBattleBoards();
             }
         });
 

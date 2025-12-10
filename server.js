@@ -259,6 +259,8 @@ io.on('connection', (socket) => {
         const defendingPlayer = attackingPlayer === 1 ? 2 : 1;
         const defendingPlayerKey = `player${defendingPlayer}`;
         
+        console.log(`Player ${attackingPlayer} shot at [${data.row}, ${data.col}]`);
+        
         // Update shot result
         const cellData = room.gameState[defendingPlayerKey].board[data.row][data.col];
         cellData.isHit = true;
@@ -270,15 +272,23 @@ io.on('connection', (socket) => {
         if (isHit && shipId !== null) {
             const ship = room.gameState[defendingPlayerKey].ships[shipId];
             ship.hits++;
+            console.log(`HIT! Ship ${ship.name}: ${ship.hits}/${ship.size}`);
             
             if (ship.hits === ship.size) {
                 ship.sunk = true;
                 shipSunk = true;
+                console.log(`Ship ${ship.name} SUNK!`);
             }
+        } else if (isHit) {
+            console.log('HIT!');
+        } else {
+            console.log('MISS!');
         }
         
         // Check for game over
         const allShipsSunk = room.gameState[defendingPlayerKey].ships.every(ship => ship.sunk);
+        
+        console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer === 1 ? 2 : 1});
         
         // Broadcast shot result to both players
         io.to(playerInfo.roomId).emit('shot-result', {
