@@ -837,6 +837,9 @@ settingsBtn.addEventListener('click', () => {
 });
 
 backToWelcomeBtn.addEventListener('click', () => {
+    if (onlineManager.isOnline) {
+        onlineManager.disconnect();
+    }
     showScreen('welcome');
 });
 
@@ -845,6 +848,17 @@ document.querySelectorAll('input[name="shootingRules"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.shootingRule = e.target.value;
         updateRuleDescription();
+        
+        // Broadcast to Player 2 if online and host
+        if (onlineManager.isOnline && onlineManager.isHost) {
+            onlineManager.updateSettings({
+                gridSize: gameState.gridSize,
+                shootingRule: gameState.shootingRule,
+                fogOfWar: gameState.fogOfWar,
+                powerUpsEnabled: gameState.powerUpsEnabled,
+                shipCounts: gameState.shipCounts
+            });
+        }
     });
 });
 
@@ -854,6 +868,17 @@ document.querySelectorAll('input[name="gridSize"]').forEach(radio => {
         gameState.gridSize = parseInt(e.target.value);
         gameState.maxShips = parseInt(e.target.dataset.maxShips);
         updateShipCountDisplay();
+        
+        // Broadcast to Player 2 if online and host
+        if (onlineManager.isOnline && onlineManager.isHost) {
+            onlineManager.updateSettings({
+                gridSize: gameState.gridSize,
+                shootingRule: gameState.shootingRule,
+                fogOfWar: gameState.fogOfWar,
+                powerUpsEnabled: gameState.powerUpsEnabled,
+                shipCounts: gameState.shipCounts
+            });
+        }
     });
 });
 
@@ -861,6 +886,17 @@ document.querySelectorAll('input[name="gridSize"]').forEach(radio => {
 document.querySelectorAll('input[name="fogOfWar"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.fogOfWar = e.target.value === 'on';
+        
+        // Broadcast to Player 2 if online and host
+        if (onlineManager.isOnline && onlineManager.isHost) {
+            onlineManager.updateSettings({
+                gridSize: gameState.gridSize,
+                shootingRule: gameState.shootingRule,
+                fogOfWar: gameState.fogOfWar,
+                powerUpsEnabled: gameState.powerUpsEnabled,
+                shipCounts: gameState.shipCounts
+            });
+        }
     });
 });
 
@@ -889,6 +925,17 @@ document.querySelectorAll('input[name="aiDifficulty"]').forEach(radio => {
 document.querySelectorAll('input[name="powerUps"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.powerUpsEnabled = e.target.value === 'on';
+        
+        // Broadcast to Player 2 if online and host
+        if (onlineManager.isOnline && onlineManager.isHost) {
+            onlineManager.updateSettings({
+                gridSize: gameState.gridSize,
+                shootingRule: gameState.shootingRule,
+                fogOfWar: gameState.fogOfWar,
+                powerUpsEnabled: gameState.powerUpsEnabled,
+                shipCounts: gameState.shipCounts
+            });
+        }
     });
 });
 
@@ -900,6 +947,17 @@ document.querySelectorAll('.ship-count').forEach(input => {
         gameState.shipCounts[shipName] = count;
         e.target.value = count;
         updateShipCountDisplay();
+        
+        // Broadcast to Player 2 if online and host
+        if (onlineManager.isOnline && onlineManager.isHost) {
+            onlineManager.updateSettings({
+                gridSize: gameState.gridSize,
+                shootingRule: gameState.shootingRule,
+                fogOfWar: gameState.fogOfWar,
+                powerUpsEnabled: gameState.powerUpsEnabled,
+                shipCounts: gameState.shipCounts
+            });
+        }
     });
     
     // Update display on input event
@@ -1530,6 +1588,9 @@ onlinePlayBtn.addEventListener('click', () => {
 });
 
 backFromOnlineBtn.addEventListener('click', () => {
+    if (onlineManager.isOnline) {
+        onlineManager.disconnect();
+    }
     showScreen('welcome');
 });
 
@@ -1596,10 +1657,16 @@ document.getElementById('copy-settings-code-btn').addEventListener('click', () =
 });
 
 backFromReadyBtn.addEventListener('click', () => {
+    if (onlineManager.isOnline) {
+        onlineManager.disconnect();
+    }
     showScreen('onlineMenu');
 });
 
 backFromRoomCodeBtn.addEventListener('click', () => {
+    if (onlineManager.isOnline) {
+        onlineManager.disconnect();
+    }
     showScreen('onlineMenu');
 });
 

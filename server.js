@@ -123,6 +123,27 @@ io.on('connection', (socket) => {
         console.log('Player joined room:', roomId, 'player:', socket.id);
     });
 
+    // Update settings (host only)
+    socket.on('update-settings', (settings) => {
+        const playerInfo = players.get(socket.id);
+        if (!playerInfo) return;
+        
+        const room = games.get(playerInfo.roomId);
+        if (!room) return;
+        
+        // Only host can update settings
+        if (playerInfo.playerNumber !== 1) return;
+        
+        room.settings = settings;
+        
+        // Broadcast updated settings to guest
+        if (room.guestId) {
+            io.to(room.guestId).emit('settings-updated', settings);
+        }
+        
+        console.log('Settings updated in room:', playerInfo.roomId, settings);
+    });
+
     // Player confirms ready from settings screen
     socket.on('player-ready', () => {
         const playerInfo = players.get(socket.id);
@@ -131,6 +152,8 @@ io.on('connection', (socket) => {
         const room = games.get(playerInfo.roomId);
         if (!room) return;
         
+        console.log('Player ready:', socket.id, 'Player number:', playerInfo.playerNumber);
+        
         const playerNumber = playerInfo.playerNumber;
         if (playerNumber === 1) {
             room.player1Ready = true;
@@ -138,20 +161,26 @@ io.on('connection', (socket) => {
             room.player2Ready = true;
         }
         
+        console.log('Ready state - P1:', room.player1Ready, 'P2:', room.player2Ready, 'Guest exists:', !!room.guestId);
+        
         // Notify the other player that this player is ready
         const otherPlayerId = playerNumber === 1 ? room.guestId : room.hostId;
         if (otherPlayerId) {
             io.to(playerInfo.roomId).emit('opponent-ready', {
                 playerNumber: playerNumber
             });
+            console.log('Sent opponent-ready to room:', playerInfo.roomId);
         }
         
         // Check if both players have confirmed ready
         if (room.areBothPlayersConfirmedReady()) {
+            console.log('Both players confirmed ready! Starting game...');
             io.to(playerInfo.roomId).emit('both-players-confirmed', {
                 phase: 'placement'
             });
             room.resetReadyFlags();
+        } else {
+            console.log('Waiting for other player...');
         }
     });
 

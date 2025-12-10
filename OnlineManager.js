@@ -114,10 +114,29 @@ class OnlineManager {
         
         this.socket.on('opponent-ready', () => {
             this.opponentReady = true;
+            console.log('Opponent is ready!');
             updateReadyStatus();
         });
         
+        this.socket.on('settings-updated', (settings) => {
+            console.log('Settings updated from host:', settings);
+            // Update local game state with new settings
+            gameState.gridSize = settings.gridSize;
+            gameState.shootingRule = settings.shootingRule;
+            gameState.fogOfWar = settings.fogOfWar;
+            gameState.powerUpsEnabled = settings.powerUpsEnabled;
+            
+            // Sync ship counts
+            Object.keys(settings.shipCounts).forEach(shipName => {
+                gameState.shipCounts[shipName] = settings.shipCounts[shipName];
+            });
+            
+            // Update display on ready-up screen if visible
+            updateReadyUpRulesDisplay();
+        });
+        
         this.socket.on('both-players-confirmed', () => {
+            console.log('Both players confirmed! Starting placement phase...');
             // Start placement
             gameState.currentPlayer = this.myPlayerNumber;
             gameState.phase = 'placement';
@@ -220,6 +239,8 @@ class OnlineManager {
         if (!this.socket || !this.roomId) return;
         this.isReady = true;
         
+        console.log('Confirming ready - Player:', this.myPlayerNumber, 'Room:', this.roomId);
+        
         // Re-enable button for future rooms
         const readyConfirmBtn = document.getElementById('ready-confirm-btn');
         if (readyConfirmBtn) {
@@ -276,11 +297,23 @@ class OnlineManager {
         this.socket.emit('play-again', {});
     }
 
+    updateSettings(settings) {
+        if (!this.socket || !this.roomId || !this.isHost) return;
+        
+        this.socket.emit('update-settings', settings);
+    }
+
     disconnect() {
         if (this.socket) {
+            console.log('Disconnecting from room:', this.roomId);
             this.socket.disconnect();
             this.socket = null;
             this.isOnline = false;
+            this.roomId = null;
+            this.isHost = false;
+            this.isReady = false;
+            this.opponentReady = false;
+            this.opponentConnected = false;
         }
     }
 }
