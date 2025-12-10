@@ -1560,12 +1560,14 @@ readySettingsBtn.addEventListener('click', () => {
         shipCounts: gameState.shipCounts
     };
     
+    onlineManager.isReady = true;
     onlineManager.confirmReady();
     readySettingsBtn.disabled = true;
     readySettingsBtn.textContent = 'Waiting for Opponent...';
 });
 
 readyConfirmBtn.addEventListener('click', () => {
+    onlineManager.isReady = true;
     onlineManager.confirmReady();
     readyConfirmBtn.disabled = true;
     readyConfirmBtn.textContent = 'Ready!';
