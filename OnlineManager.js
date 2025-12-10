@@ -181,10 +181,10 @@ class OnlineManager {
             // Update the current player from server
             gameState.currentPlayer = data.nextPlayer;
             
-            // The shot was made, now it's nextPlayer's turn
-            // If nextPlayer is NOT me, then I just shot (update enemy board)
-            // If nextPlayer IS me, then opponent just shot (update my own board)
-            if (data.nextPlayer !== myPlayerNumber) {
+            // Determine who shot based on shootingPlayer from server
+            // If shootingPlayer is me, I just shot (update enemy board)
+            // If shootingPlayer is opponent, update my own board
+            if (data.shootingPlayer === myPlayerNumber) {
                 // I just shot - update enemy board to show hit/miss
                 const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
                 cellData = enemyPlayerData.board[data.row][data.col];

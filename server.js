@@ -364,6 +364,7 @@ io.on('connection', (socket) => {
             isHit: isHit,
             shipSunk: shipSunk,
             shipName: shipName,
+            shootingPlayer: attackingPlayer, // Who took the shot
             gameOver: allShipsSunk,
             winner: allShipsSunk ? attackingPlayer : null,
             nextPlayer: room.gameState.currentPlayer

@@ -946,6 +946,9 @@ settingsBtn.addEventListener('click', () => {
 });
 
 playAgainBtn.addEventListener('click', () => {
+    if (onlineManager.isOnline) {
+        onlineManager.disconnect();
+    }
     resetGame();
     showScreen('welcome');
 });
