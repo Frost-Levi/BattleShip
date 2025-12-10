@@ -87,6 +87,8 @@ class OnlineManager {
             this.opponentConnected = true; // Host has connected
             this.opponentReady = false; // Host hasn't confirmed yet
             
+            console.log('Joined room, roomId:', this.roomId);
+            
             // Update game settings from host
             gameState.gridSize = data.settings.gridSize;
             gameState.shootingRule = data.settings.shootingRule;

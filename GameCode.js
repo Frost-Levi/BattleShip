@@ -179,6 +179,16 @@ function showScreen(screenName) {
                 document.getElementById('online-room-code-display').style.display = 'none';
             }
             
+            // Hide game mode and AI difficulty in online mode
+            const gameModeContainer = document.getElementById('game-mode-container');
+            const aiDifficultyContainer = document.getElementById('ai-difficulty-container');
+            if (gameState.gameMode === 'online') {
+                if (gameModeContainer) gameModeContainer.style.display = 'none';
+                if (aiDifficultyContainer) aiDifficultyContainer.style.display = 'none';
+            } else {
+                if (gameModeContainer) gameModeContainer.style.display = 'block';
+            }
+            
             // Show Ready button if online mode
             if (gameState.gameMode === 'online' && onlineManager.isHost) {
                 readySettingsBtn.style.display = 'block';
@@ -903,6 +913,12 @@ document.querySelectorAll('input[name="fogOfWar"]').forEach(radio => {
 // Game Mode radio buttons
 document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
+        // Don't allow changes during online play
+        if (onlineManager.isOnline) {
+            e.preventDefault();
+            return;
+        }
+        
         gameState.gameMode = e.target.value;
         const aiDifficultyContainer = document.getElementById('ai-difficulty-container');
         // Only show AI difficulty if game mode is AI (not online or pvp)

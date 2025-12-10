@@ -115,6 +115,7 @@ io.on('connection', (socket) => {
         
         // Notify guest of the game settings and show ready screen
         io.to(socket.id).emit('players-ready', {
+            roomId: roomId,
             player1Id: room.gameState.player1.id,
             player2Id: room.gameState.player2.id,
             settings: room.settings
