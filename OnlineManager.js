@@ -16,6 +16,7 @@ class OnlineManager {
         this.serverUrl = this.getServerUrl();
         this.isReady = false;
         this.opponentReady = false;
+        this.opponentConnected = false; // Track if opponent has joined
     }
 
     getServerUrl() {
@@ -67,13 +68,19 @@ class OnlineManager {
         this.socket.on('join-error', (message) => {
             alert(`Error: ${message}`);
         });
+        
+        this.socket.on('opponent-joined', () => {
+            this.opponentConnected = true;
+            updateReadyStatus();
+        });
 
         this.socket.on('players-ready', (data) => {
             this.myPlayerNumber = 2; // I am Player 2
             this.playerNumber = 1; // Player 1 starts
             this.isOnline = true;
             this.isReady = false;
-            this.opponentReady = true;
+            this.opponentConnected = true; // Host has connected
+            this.opponentReady = false; // Host hasn't confirmed yet
             
             // Update game settings from host
             gameState.gridSize = data.settings.gridSize;
@@ -88,6 +95,7 @@ class OnlineManager {
             
             // Show ready screen
             showScreen('readyUp');
+            updateReadyStatus();
         });
         
         this.socket.on('opponent-ready', () => {

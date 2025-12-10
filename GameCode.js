@@ -1602,13 +1602,17 @@ function showRoomCodeScreen(roomCode) {
 function showSettingsWithRoomCode(roomCode) {
     document.getElementById('settings-room-code-text').textContent = roomCode;
     document.getElementById('online-room-code-display').style.display = 'block';
+    // Initialize opponent connection status
+    updateReadyStatus();
     showScreen('settings');
 }
 
 function updateReadyStatus() {
     const youStatus = document.getElementById('you-ready-status');
     const opponentStatus = document.getElementById('opponent-ready-status');
+    const connectionStatus = document.getElementById('opponent-connection-status');
     
+    // Update your status
     if (onlineManager.isReady) {
         youStatus.textContent = 'Ready ✓';
         youStatus.style.color = '#4CAF50';
@@ -1617,12 +1621,30 @@ function updateReadyStatus() {
         youStatus.style.color = '#f44336';
     }
     
-    if (onlineManager.opponentReady) {
+    // Update opponent status - show connection first, then ready status
+    if (!onlineManager.opponentConnected) {
+        opponentStatus.textContent = 'Not Connected';
+        opponentStatus.style.color = '#f44336';
+    } else if (onlineManager.opponentReady) {
         opponentStatus.textContent = 'Ready ✓';
         opponentStatus.style.color = '#4CAF50';
     } else {
-        opponentStatus.textContent = 'Not Ready';
-        opponentStatus.style.color = '#f44336';
+        opponentStatus.textContent = 'Connected - Not Ready';
+        opponentStatus.style.color = '#FFC107';
+    }
+    
+    // Update connection status in settings screen
+    if (connectionStatus) {
+        if (!onlineManager.opponentConnected) {
+            connectionStatus.textContent = 'Opponent: Not Connected';
+            connectionStatus.style.color = '#f44336';
+        } else if (onlineManager.opponentReady) {
+            connectionStatus.textContent = 'Opponent: Ready ✓';
+            connectionStatus.style.color = '#4CAF50';
+        } else {
+            connectionStatus.textContent = 'Opponent: Connected';
+            connectionStatus.style.color = '#FFC107';
+        }
     }
 }
 
