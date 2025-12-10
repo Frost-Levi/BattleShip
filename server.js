@@ -110,8 +110,11 @@ io.on('connection', (socket) => {
         
         socket.join(roomId);
         
-        // Notify both players that the game is ready
-        io.to(roomId).emit('players-ready', {
+        // Notify host that guest has joined
+        io.to(room.hostId).emit('opponent-joined');
+        
+        // Notify guest of the game settings and show ready screen
+        io.to(socket.id).emit('players-ready', {
             player1Id: room.gameState.player1.id,
             player2Id: room.gameState.player2.id,
             settings: room.settings

@@ -73,8 +73,10 @@ class OnlineManager {
         
         this.socket.on('opponent-joined', () => {
             this.opponentConnected = true;
-            // Don't change screen - host stays on settings screen
-            updateReadyStatus();
+            // Host stays on settings screen, just update the status
+            if (gameState.phase === 'settings') {
+                updateReadyStatus();
+            }
         });
 
         this.socket.on('players-ready', (data) => {
@@ -97,7 +99,12 @@ class OnlineManager {
                 gameState.shipCounts[shipName] = data.settings.shipCounts[shipName];
             });
             
+            // Reset ready states for new room
+            this.isReady = false;
+            this.opponentReady = false;
+            
             // Update rules display on ready-up screen
+            updateReadyUpRulesDisplay();
             updateRuleDescription();
             
             // Show ready screen for Player 2 only
@@ -212,6 +219,14 @@ class OnlineManager {
     confirmReady() {
         if (!this.socket || !this.roomId) return;
         this.isReady = true;
+        
+        // Re-enable button for future rooms
+        const readyConfirmBtn = document.getElementById('ready-confirm-btn');
+        if (readyConfirmBtn) {
+            readyConfirmBtn.disabled = true;
+            readyConfirmBtn.textContent = 'Ready!';
+        }
+        
         this.socket.emit('player-ready', {});
     }
     
@@ -222,6 +237,11 @@ class OnlineManager {
 
     joinRoom(roomId) {
         if (!this.socket) this.connect();
+        
+        // Reset ready state for new room
+        this.isReady = false;
+        this.opponentReady = false;
+        this.opponentConnected = false;
         
         this.socket.emit('join-room', roomId);
     }

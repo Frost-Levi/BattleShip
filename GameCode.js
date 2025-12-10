@@ -188,6 +188,13 @@ function showScreen(screenName) {
             break;
         case 'readyUp':
             readyUpScreen.classList.add('active');
+            // Reset ready button state for new room
+            const readyBtn = document.getElementById('ready-confirm-btn');
+            if (readyBtn) {
+                readyBtn.disabled = false;
+                readyBtn.textContent = "I'm Ready";
+            }
+            updateReadyUpRulesDisplay();
             updateReadyStatus();
             break;
         case 'waitingForPlacement':
@@ -1571,8 +1578,6 @@ readySettingsBtn.addEventListener('click', () => {
 readyConfirmBtn.addEventListener('click', () => {
     onlineManager.isReady = true;
     onlineManager.confirmReady();
-    readyConfirmBtn.disabled = true;
-    readyConfirmBtn.textContent = 'Ready!';
     updateReadyStatus();
 });
 
@@ -1609,6 +1614,39 @@ function showSettingsWithRoomCode(roomCode) {
     // Initialize opponent connection status
     updateReadyStatus();
     showScreen('settings');
+}
+
+function updateReadyUpRulesDisplay() {
+    // Update grid size
+    const gridSizeText = document.getElementById('ready-grid-size');
+    if (gridSizeText) {
+        gridSizeText.textContent = `${gameState.gridSize}x${gameState.gridSize}`;
+    }
+    
+    // Update shooting rule
+    const shootingRuleText = document.getElementById('ready-shooting-rule');
+    if (shootingRuleText) {
+        const ruleNames = {
+            'oneshot': 'One Shot',
+            'twoshots': 'Two Shots',
+            'threeshots': 'Three Shots',
+            'tillmiss': 'Till Miss',
+            'shipfire': 'Ship Fire'
+        };
+        shootingRuleText.textContent = ruleNames[gameState.shootingRule] || 'One Shot';
+    }
+    
+    // Update fog of war
+    const fogOfWarText = document.getElementById('ready-fog-of-war');
+    if (fogOfWarText) {
+        fogOfWarText.textContent = gameState.fogOfWar ? 'On' : 'Off';
+    }
+    
+    // Update power-ups
+    const powerUpsText = document.getElementById('ready-power-ups');
+    if (powerUpsText) {
+        powerUpsText.textContent = gameState.powerUpsEnabled ? 'On' : 'Off';
+    }
 }
 
 function updateReadyStatus() {
