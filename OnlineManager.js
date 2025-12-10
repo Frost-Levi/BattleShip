@@ -205,6 +205,12 @@ class OnlineManager {
                         
                         if (data.shipSunk && data.shipName) {
                             alert(`You sunk the enemy's ${data.shipName}!`);
+                            // Mark the ship as sunk on the client
+                            // Find the ship by name and mark it sunk
+                            const ship = enemyPlayerData.ships.find(s => s.name === data.shipName);
+                            if (ship) {
+                                ship.sunk = true;
+                            }
                         }
                     }
                 }

@@ -649,17 +649,37 @@ function renderBattleBoards() {
                     // Normal mode or scope: show all hits and misses
                     // CRITICAL: Check if cell has a ship to determine hit vs miss
                     if (cellData.hasShip) {
-                        cell.classList.add('hit');
-                        console.log(`Adding 'hit' class to [${row},${col}]`);
+                        // Check if this is a sunk ship by checking all enemy ships
+                        let isSunk = false;
+                        for (const ship of enemyPlayerData.ships) {
+                            if (ship.sunk) {
+                                // Check if this cell is part of a sunk ship's cells
+                                for (const [r, c] of ship.cells || []) {
+                                    if (r === row && c === col) {
+                                        isSunk = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isSunk) break;
+                        }
+                        
+                        if (isSunk) {
+                            cell.classList.add('sunk');
+                        } else {
+                            cell.classList.add('hit');
+                            console.log(`Adding 'hit' class to [${row},${col}]`);
+                        }
                     } else {
                         cell.classList.add('miss');
                         console.log(`Adding 'miss' class to [${row},${col}]`);
                     }
                     
-                    // Check if ship is sunk
+                    // Also check if ship is sunk using shipId (for local games)
                     if (cellData.hasShip && cellData.shipId !== null) {
                         const ship = enemyPlayerData.ships[cellData.shipId];
                         if (ship && ship.sunk) {
+                            cell.classList.remove('hit');
                             cell.classList.add('sunk');
                         }
                     }
