@@ -210,7 +210,7 @@ class OnlineManager {
                             
                             // Mark all adjacent hit cells as part of the sunk ship
                             // We need to find all connected hit cells to this one
-                            const sunkCells = this.findConnectedShipCells(enemyPlayerData.board, data.row, data.col);
+                            const sunkCells = this.findConnectedShipCells(enemyPlayerData.board, data.row, data.col, data.shipSize);
                             console.log('Sunk cells found:', sunkCells);
                             
                             // Mark all these cells as sunk
@@ -393,7 +393,7 @@ class OnlineManager {
         this.socket.emit('update-settings', settings);
     }
 
-    findConnectedShipCells(board, startRow, startCol) {
+    findConnectedShipCells(board, startRow, startCol, shipSize) {
         // Find all connected hit cells (horizontally or vertically) to form the ship
         const visited = new Set();
         const cells = [];
@@ -406,6 +406,9 @@ class OnlineManager {
             
             const cell = board[row][col];
             if (!cell || !cell.isHit || !cell.hasShip) return;
+            
+            // Stop if we've already found enough cells for this ship
+            if (cells.length >= shipSize) return;
             
             visited.add(key);
             cells.push([row, col]);

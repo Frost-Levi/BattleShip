@@ -335,8 +335,9 @@ io.on('connection', (socket) => {
             // Switch turn only if it was a miss
             shouldSwitchTurn = !isHit;
         } else if (shootingRule === 'shipfire') {
-            // Count remaining ships
-            const remainingShips = room.gameState[attackingPlayerKey].ships.filter(ship => !ship.sunk).length;
+            // Count remaining ships of the OPPONENT (defender), not the attacking player
+            const defenderKey = attackingPlayerKey === 'player1' ? 'player2' : 'player1';
+            const remainingShips = room.gameState[defenderKey].ships.filter(ship => !ship.sunk).length;
             shouldSwitchTurn = room.gameState.shotsThisTurn >= remainingShips;
         }
         
@@ -348,12 +349,14 @@ io.on('connection', (socket) => {
         
         console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer, shotsThisTurn: room.gameState.shotsThisTurn});
         
-        // Get ship name if sunk
+        // Get ship name and size if sunk
         let shipName = null;
+        let shipSize = null;
         if (shipSunk && shipId !== null) {
             const ship = room.gameState[defendingPlayerKey].ships[shipId];
             if (ship) {
                 shipName = ship.name;
+                shipSize = ship.size;
             }
         }
         
@@ -364,6 +367,7 @@ io.on('connection', (socket) => {
             isHit: isHit,
             shipSunk: shipSunk,
             shipName: shipName,
+            shipSize: shipSize,
             shootingPlayer: attackingPlayer, // Who took the shot
             gameOver: allShipsSunk,
             winner: allShipsSunk ? attackingPlayer : null,
