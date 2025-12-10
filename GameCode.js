@@ -1472,6 +1472,7 @@ donePlacementBtn.addEventListener('click', () => {
             showScreen('playerTurn');
         } else if (gameState.gameMode === 'online') {
             // Player 1 done, send board to server
+            console.log('Player 1 sending board and placement done...');
             onlineManager.updateBoard(gameState.player1.board, gameState.player1.ships);
             onlineManager.sendPlacementDone();
             showScreen('waitingForPlacement');
@@ -1485,6 +1486,7 @@ donePlacementBtn.addEventListener('click', () => {
     } else {
         if (gameState.gameMode === 'online') {
             // Player 2 done, send board to server
+            console.log('Player 2 sending board and placement done...');
             onlineManager.updateBoard(gameState.player2.board, gameState.player2.ships);
             onlineManager.sendPlacementDone();
             showScreen('waitingForPlacement');

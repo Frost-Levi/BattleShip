@@ -214,8 +214,33 @@ io.on('connection', (socket) => {
         room.gameState[playerKey].ships = data.ships;
         room.gameState[playerKey].shipsPlaced = true;
         
+        console.log(`Player ${playerNumber} ships placed. P1 placed: ${room.gameState.player1.shipsPlaced}, P2 placed: ${room.gameState.player2.shipsPlaced}`);
+        
         // Check if both players have placed ships
         if (room.isReady()) {
+            console.log('Both players ready! Starting battle...');
+            io.to(playerInfo.roomId).emit('both-players-ready', {
+                phase: 'battle'
+            });
+        }
+    });
+    
+    // Handle placement done (backup signal)
+    socket.on('placement-done', () => {
+        const playerInfo = players.get(socket.id);
+        if (!playerInfo) return;
+        
+        const room = games.get(playerInfo.roomId);
+        if (!room) return;
+        
+        const playerNumber = playerInfo.playerNumber;
+        const playerKey = `player${playerNumber}`;
+        
+        console.log(`Player ${playerNumber} confirmed placement done.`);
+        
+        // Check if both players have placed ships
+        if (room.isReady()) {
+            console.log('Both players ready! Starting battle...');
             io.to(playerInfo.roomId).emit('both-players-ready', {
                 phase: 'battle'
             });

@@ -153,11 +153,12 @@ class OnlineManager {
             showScreen('waitingForPlacement');
         });
         
-        this.socket.on('both-players-placed', (data) => {
-            // Both players finished placement, start battle
+        this.socket.on('both-players-ready', () => {
+            console.log('Both players ready - starting battle!');
             gameState.phase = 'battle';
             gameState.currentPlayer = 1;
             showScreen('battle');
+            renderBattleBoards();
         });
 
         this.socket.on('shot-result', (data) => {
