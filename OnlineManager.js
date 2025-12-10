@@ -261,6 +261,9 @@ class OnlineManager {
             } else {
                 // It's your turn
                 console.log('Your turn after shot - you can shoot');
+                // Reset shots for this turn when it becomes your turn
+                gameState.shotsThisTurn = 0;
+                gameState.lastShotHit = false;
             }
         });
 

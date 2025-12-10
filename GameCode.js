@@ -827,7 +827,9 @@ function handleAttack(e) {
 }
 
 function canShootMore() {
-    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    // In online mode, use myPlayerNumber; in offline use currentPlayer
+    const playerNumber = gameState.isOnline ? onlineManager.myPlayerNumber : gameState.currentPlayer;
+    const currentPlayerData = playerNumber === 1 ? gameState.player1 : gameState.player2;
     let maxShots = 1;
     
     if (gameState.shootingRule === 'oneshot') {
@@ -849,6 +851,7 @@ function canShootMore() {
         maxShots++;
     }
     
+    console.log(`canShootMore - playerNumber: ${playerNumber}, shotsThisTurn: ${gameState.shotsThisTurn}, maxShots: ${maxShots}, can shoot: ${gameState.shotsThisTurn < maxShots}`);
     return gameState.shotsThisTurn < maxShots;
 }
 
