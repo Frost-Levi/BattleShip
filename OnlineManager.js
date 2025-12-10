@@ -115,7 +115,8 @@ class OnlineManager {
             updateReadyStatus();
         });
         
-        this.socket.on('opponent-ready', () => {
+        this.socket.on('opponent-ready', (data) => {
+            console.log('Opponent-ready received:', data);
             this.opponentReady = true;
             console.log('Opponent is ready!');
             updateReadyStatus();

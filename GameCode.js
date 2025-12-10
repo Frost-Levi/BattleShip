@@ -707,6 +707,12 @@ function handleAttack(e) {
     
     const cellData = enemyPlayerData.board[row][col];
     
+    // Check if already shot this cell (don't allow re-shooting in online mode)
+    if (gameState.isOnline && cellData.isHit) {
+        console.log('Cell already hit in online mode - ignoring');
+        return;
+    }
+    
     // Check if this cell is cloaked - allow re-shooting to reveal
     // Cloaked cells are stored in currentPlayer's array (cells I shot that are hidden)
     const cloakedIndex = currentPlayerData.cloakedCells.findIndex(([r, c]) => r === row && c === col);
@@ -1777,6 +1783,8 @@ function updateReadyStatus() {
     const youStatus = document.getElementById('you-ready-status');
     const opponentStatus = document.getElementById('opponent-ready-status');
     const connectionStatus = document.getElementById('opponent-connection-status');
+    
+    console.log('Updating ready status - My ready:', onlineManager.isReady, 'Opponent ready:', onlineManager.opponentReady, 'Opponent connected:', onlineManager.opponentConnected);
     
     // Update your status
     if (onlineManager.isReady) {
