@@ -312,12 +312,41 @@ io.on('connection', (socket) => {
         // Check for game over
         const allShipsSunk = room.gameState[defendingPlayerKey].ships.every(ship => ship.sunk);
         
-        // Update current player BEFORE broadcasting
-        if (!allShipsSunk) {
-            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
+        // Track shots taken this turn
+        if (!room.gameState.shotsThisTurn) {
+            room.gameState.shotsThisTurn = 0;
+        }
+        room.gameState.shotsThisTurn++;
+        
+        // Determine if turn should switch based on shooting rules
+        let shouldSwitchTurn = false;
+        const shootingRule = room.settings?.shootingRule || 'oneshot';
+        
+        if (allShipsSunk) {
+            // Game over, don't switch turn
+            shouldSwitchTurn = false;
+        } else if (shootingRule === 'oneshot') {
+            shouldSwitchTurn = true;
+        } else if (shootingRule === 'twoshots') {
+            shouldSwitchTurn = room.gameState.shotsThisTurn >= 2;
+        } else if (shootingRule === 'threeshots') {
+            shouldSwitchTurn = room.gameState.shotsThisTurn >= 3;
+        } else if (shootingRule === 'tillmiss') {
+            // Switch turn only if it was a miss
+            shouldSwitchTurn = !isHit;
+        } else if (shootingRule === 'shipfire') {
+            // Count remaining ships
+            const remainingShips = room.gameState[attackingPlayerKey].ships.filter(ship => !ship.sunk).length;
+            shouldSwitchTurn = room.gameState.shotsThisTurn >= remainingShips;
         }
         
-        console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer});
+        // Update current player if turn should switch
+        if (shouldSwitchTurn && !allShipsSunk) {
+            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
+            room.gameState.shotsThisTurn = 0; // Reset for next player
+        }
+        
+        console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer, shotsThisTurn: room.gameState.shotsThisTurn});
         
         // Get ship name if sunk
         let shipName = null;
