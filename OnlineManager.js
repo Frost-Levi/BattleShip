@@ -182,11 +182,15 @@ class OnlineManager {
                 // I just shot - update enemy board to show hit/miss
                 const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
                 cellData = enemyPlayerData.board[data.row][data.col];
-                console.log('I shot - updating enemy board at', data.row, data.col);
+                console.log('I shot - updating enemy board at', data.row, data.col, 'Hit:', data.isHit);
                 
                 // Mark the cell as hit on enemy board
                 if (cellData) {
                     cellData.isHit = true;
+                    // CRITICAL: Set hasShip based on server's authoritative response
+                    // The client doesn't know enemy ship positions, so trust the server
+                    cellData.hasShip = data.isHit;
+                    console.log('Updated enemy cell - hasShip set to:', cellData.hasShip);
                     
                     // Update hit tracking
                     if (data.isHit) {

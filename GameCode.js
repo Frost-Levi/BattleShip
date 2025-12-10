@@ -617,13 +617,10 @@ function renderBattleBoards() {
             const cellData = enemyPlayerData.board[row][col];
             
             if (cellData.isHit) {
+                console.log(`Enemy cell [${row},${col}] - isHit: true, hasShip: ${cellData.hasShip}, shipId: ${cellData.shipId}`);
+                
                 // Check if this specific cell is cloaked
                 const isCloaked = currentPlayerData.cloakedCells.some(([r, c]) => r === row && c === col);
-                
-                // Allow clicking cloaked cells or cells in fog of war to reveal/re-shoot
-                if (isCloaked || gameState.fogOfWar) {
-                    cell.addEventListener('click', handleAttack);
-                }
                 
                 // Check if cloak or scope power-ups override display mode
                 let showFeedback = !gameState.fogOfWar;
@@ -638,7 +635,7 @@ function renderBattleBoards() {
                     // Fog of war or cloak mode: only show sunk ships with marker for shots
                     if (cellData.hasShip && cellData.shipId !== null) {
                         const ship = enemyPlayerData.ships[cellData.shipId];
-                        if (ship.sunk) {
+                        if (ship && ship.sunk) {
                             cell.classList.add('sunk');
                         } else {
                             // Ship hit but not sunk - show marker
@@ -650,12 +647,19 @@ function renderBattleBoards() {
                     }
                 } else {
                     // Normal mode or scope: show all hits and misses
-                    cell.classList.add(cellData.hasShip ? 'hit' : 'miss');
+                    // CRITICAL: Check if cell has a ship to determine hit vs miss
+                    if (cellData.hasShip) {
+                        cell.classList.add('hit');
+                        console.log(`Adding 'hit' class to [${row},${col}]`);
+                    } else {
+                        cell.classList.add('miss');
+                        console.log(`Adding 'miss' class to [${row},${col}]`);
+                    }
                     
                     // Check if ship is sunk
                     if (cellData.hasShip && cellData.shipId !== null) {
                         const ship = enemyPlayerData.ships[cellData.shipId];
-                        if (ship.sunk) {
+                        if (ship && ship.sunk) {
                             cell.classList.add('sunk');
                         }
                     }
