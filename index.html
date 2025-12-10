@@ -12,6 +12,22 @@
         <h1>BATTLESHIP</h1>
         <button id="settings-btn" class="main-btn secondary">Settings</button>
         <button id="start-game-btn" class="main-btn">Start Game</button>
+        <button id="online-play-btn" class="main-btn" style="background-color: #20a39e;">Online Play</button>
+    </div>
+
+    <!-- Online Menu Screen -->
+    <div id="online-menu-screen" class="screen">
+        <h2>Online Play</h2>
+        <div style="max-width: 400px; margin: 0 auto; text-align: center;">
+            <button id="create-room-btn" class="main-btn" style="margin-bottom: 20px;">Create Room</button>
+            <p>OR</p>
+            <div style="margin: 20px 0;">
+                <input type="text" id="room-code-input" placeholder="Enter room code to join" 
+                       style="padding: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
+                <button id="join-room-btn" class="main-btn secondary">Join Room</button>
+            </div>
+            <button id="back-from-online-btn" class="main-btn secondary" style="margin-top: 20px;">Back</button>
+        </div>
     </div>
 
     <!-- Settings Screen -->
@@ -332,6 +348,13 @@
         <button id="play-again-btn" class="main-btn">Play Again</button>
     </div>
 
+    <!-- Socket.IO library -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Online Manager -->
+    <script src="OnlineManager.js"></script>
+    
+    <!-- Game Code -->
     <script src="GameCode.js"></script>
 </body>
 </html>

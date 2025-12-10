@@ -67,6 +67,7 @@ const playerTurnScreen = document.getElementById('player-turn-screen');
 const placementScreen = document.getElementById('placement-screen');
 const battleScreen = document.getElementById('battle-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
+const onlineMenuScreen = document.getElementById('online-menu-screen');
 
 const startGameBtn = document.getElementById('start-game-btn');
 const settingsBtn = document.getElementById('settings-btn');
@@ -76,6 +77,11 @@ const rotateBtn = document.getElementById('rotate-btn');
 const donePlacementBtn = document.getElementById('done-placement-btn');
 const endTurnBtn = document.getElementById('end-turn-btn');
 const playAgainBtn = document.getElementById('play-again-btn');
+const onlinePlayBtn = document.getElementById('online-play-btn');
+const createRoomBtn = document.getElementById('create-room-btn');
+const joinRoomBtn = document.getElementById('join-room-btn');
+const backFromOnlineBtn = document.getElementById('back-from-online-btn');
+const roomCodeInput = document.getElementById('room-code-input');
 
 const playerTurnText = document.getElementById('player-turn-text');
 const placementTitle = document.getElementById('placement-title');
@@ -142,7 +148,7 @@ function createEmptyBoard(size = gameState.gridSize) {
 
 // Screen management
 function showScreen(screenName) {
-    const screens = [welcomeScreen, settingsScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen];
+    const screens = [welcomeScreen, settingsScreen, playerTurnScreen, placementScreen, battleScreen, gameOverScreen, onlineMenuScreen];
     screens.forEach(screen => screen.classList.remove('active'));
     
     switch(screenName) {
@@ -150,13 +156,21 @@ function showScreen(screenName) {
             gameState.phase = 'welcome';
             welcomeScreen.classList.add('active');
             break;
+        case 'onlineMenu':
+            onlineMenuScreen.classList.add('active');
+            roomCodeInput.value = '';
+            break;
         case 'settings':
             gameState.phase = 'settings';
             settingsScreen.classList.add('active');
             break;
         case 'playerTurn':
             playerTurnScreen.classList.add('active');
-            playerTurnText.textContent = `Player ${gameState.currentPlayer} - Your Turn!`;
+            if (gameState.gameMode === 'online') {
+                playerTurnText.textContent = `Player ${gameState.currentPlayer} - Place Your Ships`;
+            } else {
+                playerTurnText.textContent = `Player ${gameState.currentPlayer} - Your Turn!`;
+            }
             break;
         case 'placement':
             gameState.phase = 'placement';
@@ -176,6 +190,19 @@ function showScreen(screenName) {
             currentPlayerData.scopeActive = false;
             currentPlayerData.extraShotUsed = false;
             battleScreen.classList.add('active');
+            
+            // Add player indicator for online mode
+            if (gameState.gameMode === 'online') {
+                let playerIndicator = document.getElementById('player-indicator');
+                if (!playerIndicator) {
+                    playerIndicator = document.createElement('div');
+                    playerIndicator.id = 'player-indicator';
+                    playerIndicator.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #20a39e; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; z-index: 1000;';
+                    document.body.appendChild(playerIndicator);
+                }
+                playerIndicator.textContent = `Player ${gameState.currentPlayer}'s Turn`;
+            }
+            
             updateLegend();
             updateBattleTitle();
             renderBattleBoards();
@@ -650,17 +677,27 @@ function handleAttack(e) {
         updatePowerUps();
     }
     
-    // Check for game over
-    if (checkGameOver()) {
-        endGame();
-    } else {
-        // Check if player can take more shots
-        if (!canShootMore()) {
-            // End turn after a short delay
-            setTimeout(() => {
-                endTurnBtn.disabled = false;
-            }, 300);
+    // For online mode, send shot to server
+    if (gameState.gameMode === 'online') {
+        onlineManager.shoot(row, col);
+    }
+    
+    // Check for game over (only for offline - online receives result from server)
+    if (gameState.gameMode !== 'online') {
+        if (checkGameOver()) {
+            endGame();
+        } else {
+            // Check if player can take more shots
+            if (!canShootMore()) {
+                // End turn after a short delay
+                setTimeout(() => {
+                    endTurnBtn.disabled = false;
+                }, 300);
+            }
         }
+    } else {
+        // For online, disable end turn button until server response
+        endTurnBtn.disabled = true;
     }
 }
 
@@ -1289,6 +1326,10 @@ donePlacementBtn.addEventListener('click', () => {
             // Start battle
             gameState.currentPlayer = 1;
             showScreen('playerTurn');
+        } else if (gameState.gameMode === 'online') {
+            // Player 1 done, send board to server
+            onlineManager.updateBoard(gameState.player1.board, gameState.player1.ships);
+            showScreen('playerTurn');
         } else {
             // Player 1 done, now Player 2's turn
             gameState.currentPlayer = 2;
@@ -1297,9 +1338,14 @@ donePlacementBtn.addEventListener('click', () => {
             showScreen('playerTurn');
         }
     } else {
-        // Both players done, start battle
-        gameState.currentPlayer = 1;
-        showScreen('playerTurn');
+        if (gameState.gameMode === 'online') {
+            // Player 2 done, send board to server
+            onlineManager.updateBoard(gameState.player2.board, gameState.player2.ships);
+        } else {
+            // Both players done, start battle
+            gameState.currentPlayer = 1;
+            showScreen('playerTurn');
+        }
     }
 });
 
@@ -1352,19 +1398,25 @@ endTurnBtn.addEventListener('click', () => {
         endTurnBtn.disabled = true;
     } else {
         // Switch to next player or show privacy screen
-        // Check if current player (about to switch from) has won
-        const currentPlayerOpponent = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
-        const allEnemyShipsSunk = currentPlayerOpponent.ships.every(ship => ship.sunk);
-        
-        if (allEnemyShipsSunk) {
-            gameState.winner = gameState.currentPlayer === 1 ? 'Player 1' : 'Player 2';
-            endGame();
-            return;
+        if (gameState.gameMode === 'online') {
+            // For online, just send end-turn signal to server
+            onlineManager.endTurn();
+            endTurnBtn.disabled = true;
+        } else {
+            // Check if current player (about to switch from) has won
+            const currentPlayerOpponent = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+            const allEnemyShipsSunk = currentPlayerOpponent.ships.every(ship => ship.sunk);
+            
+            if (allEnemyShipsSunk) {
+                gameState.winner = gameState.currentPlayer === 1 ? 'Player 1' : 'Player 2';
+                endGame();
+                return;
+            }
+            
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            endTurnBtn.disabled = true;
+            showScreen('playerTurn');
         }
-        
-        gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-        endTurnBtn.disabled = true;
-        showScreen(gameState.gameMode === 'ai' ? 'battle' : 'playerTurn');
     }
 });
 
@@ -1392,7 +1444,46 @@ function canAIShootMore() {
 }
 
 playAgainBtn.addEventListener('click', () => {
-    initGame();
+    if (gameState.gameMode === 'online') {
+        onlineManager.playAgain();
+    } else {
+        initGame();
+    }
+});
+
+// Online Play Button Listeners
+onlinePlayBtn.addEventListener('click', () => {
+    showScreen('onlineMenu');
+});
+
+backFromOnlineBtn.addEventListener('click', () => {
+    showScreen('welcome');
+});
+
+createRoomBtn.addEventListener('click', () => {
+    // Temporarily set online mode and get current settings
+    gameState.gameMode = 'online';
+    
+    const settings = {
+        gridSize: gameState.gridSize,
+        shootingRule: gameState.shootingRule,
+        fogOfWar: gameState.fogOfWar,
+        powerUpsEnabled: gameState.powerUpsEnabled,
+        shipCounts: gameState.shipCounts
+    };
+    
+    onlineManager.createRoom(settings);
+});
+
+joinRoomBtn.addEventListener('click', () => {
+    const roomCode = roomCodeInput.value.trim();
+    if (!roomCode) {
+        alert('Please enter a room code');
+        return;
+    }
+    
+    gameState.gameMode = 'online';
+    onlineManager.joinRoom(roomCode);
 });
 
 // Initialize on load
