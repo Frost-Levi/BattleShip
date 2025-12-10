@@ -707,6 +707,8 @@ function handleAttack(e) {
     
     const cellData = enemyPlayerData.board[row][col];
     
+    console.log(`Checking cell [${row},${col}] - isHit: ${cellData.isHit}, hasShip: ${cellData.hasShip}, shipId: ${cellData.shipId}`);
+    
     // Check if already shot this cell (don't allow re-shooting in online mode)
     if (gameState.isOnline && cellData.isHit) {
         console.log('Cell already hit in online mode - ignoring');

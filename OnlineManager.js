@@ -116,9 +116,14 @@ class OnlineManager {
         });
         
         this.socket.on('opponent-ready', (data) => {
-            console.log('Opponent-ready received:', data);
-            this.opponentReady = true;
-            console.log('Opponent is ready!');
+            console.log('Opponent-ready received:', data, 'My player number:', this.myPlayerNumber);
+            // Only set opponentReady if the ready player is NOT me
+            if (data.playerNumber !== this.myPlayerNumber) {
+                this.opponentReady = true;
+                console.log('Opponent is ready!');
+            } else {
+                console.log('This is my own ready signal, ignoring');
+            }
             updateReadyStatus();
         });
         
