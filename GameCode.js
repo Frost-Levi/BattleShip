@@ -175,7 +175,14 @@ function showScreen(screenName) {
         case 'placement':
             gameState.phase = 'placement';
             placementScreen.classList.add('active');
-            placementTitle.textContent = `Player ${gameState.currentPlayer} - Place Your Ships`;
+            
+            // Show correct player indicator for online mode
+            if (gameState.gameMode === 'online') {
+                placementTitle.textContent = `Player ${gameState.currentPlayer} (You) - Place Your Ships`;
+            } else {
+                placementTitle.textContent = `Player ${gameState.currentPlayer} - Place Your Ships`;
+            }
+            
             updateShipInfo();
             renderPlacementBoard();
             renderShipSelector();
@@ -200,7 +207,15 @@ function showScreen(screenName) {
                     playerIndicator.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #20a39e; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; z-index: 1000;';
                     document.body.appendChild(playerIndicator);
                 }
-                playerIndicator.textContent = `Player ${gameState.currentPlayer}'s Turn`;
+                
+                // Show whose turn it is
+                if (gameState.currentPlayer === onlineManager.myPlayerNumber) {
+                    playerIndicator.textContent = `Your Turn!`;
+                    playerIndicator.style.background = '#4CAF50'; // Green for your turn
+                } else {
+                    playerIndicator.textContent = `Opponent's Turn`;
+                    playerIndicator.style.background = '#f44336'; // Red for opponent's turn
+                }
             }
             
             updateLegend();
@@ -478,6 +493,21 @@ function renderBattleBoards() {
     const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
     
     const gridSizeClass = `grid-${gameState.gridSize}x${gameState.gridSize}`;
+    
+    // Determine board display order based on player identity in online mode
+    // For Player 2, swap the visual positions using flex-direction: row-reverse
+    if (gameState.isOnline && onlineManager.myPlayerNumber === 2) {
+        const battleContainer = document.querySelector('.battle-container');
+        if (battleContainer && battleContainer.style.flexDirection !== 'row-reverse') {
+            battleContainer.style.flexDirection = 'row-reverse';
+        }
+    } else {
+        // For Player 1, keep normal order
+        const battleContainer = document.querySelector('.battle-container');
+        if (battleContainer && battleContainer.style.flexDirection !== 'row') {
+            battleContainer.style.flexDirection = 'row';
+        }
+    }
     
     // Render own board (with ships visible)
     const ownBoard = document.getElementById('own-board');

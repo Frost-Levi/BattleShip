@@ -9,7 +9,8 @@ class OnlineManager {
     constructor() {
         this.socket = null;
         this.roomId = null;
-        this.playerNumber = null;
+        this.playerNumber = null; // 1 or 2
+        this.myPlayerNumber = null; // Which player am I (1 or 2)
         this.isOnline = false;
         this.isHost = false;
         this.serverUrl = this.getServerUrl();
@@ -42,9 +43,13 @@ class OnlineManager {
 
         this.socket.on('room-created', (data) => {
             this.roomId = data.roomId;
-            this.playerNumber = 1;
+            this.myPlayerNumber = 1; // I am Player 1
+            this.playerNumber = 1; // Currently player 1's turn
             this.isHost = true;
             this.isOnline = true;
+            
+            // Set game state to player 1
+            gameState.currentPlayer = 1;
             
             // Show room code to player
             alert(`Room created! Room Code: ${data.roomId}\nShare this code with your opponent.`);
@@ -59,7 +64,8 @@ class OnlineManager {
         });
 
         this.socket.on('players-ready', (data) => {
-            this.playerNumber = 2;
+            this.myPlayerNumber = 2; // I am Player 2
+            this.playerNumber = 1; // Player 1 starts
             this.isOnline = true;
             
             // Update game settings from host
@@ -73,8 +79,8 @@ class OnlineManager {
                 gameState.shipCounts[shipName] = data.settings.shipCounts[shipName];
             });
             
-            // Start placement
-            gameState.currentPlayer = 1;
+            // Start placement - Player 2 starts placing first
+            gameState.currentPlayer = 2;
             gameState.phase = 'placement';
             gameState.currentShipIndex = 0;
             gameState.isHorizontal = true;
