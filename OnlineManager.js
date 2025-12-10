@@ -1,4 +1,10 @@
 // Socket.IO client for online play
+// 
+// AUTO-DEPLOYMENT SUPPORT:
+// - Local: Automatically connects to http://localhost:3000
+// - Production: Automatically connects to your deployed server URL
+// - No configuration needed - just deploy to Railway/Render and it works!
+
 class OnlineManager {
     constructor() {
         this.socket = null;
@@ -6,17 +12,32 @@ class OnlineManager {
         this.playerNumber = null;
         this.isOnline = false;
         this.isHost = false;
+        this.serverUrl = this.getServerUrl();
+    }
+
+    getServerUrl() {
+        // Auto-detect server URL based on environment
+        const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
+        
+        // Local development (localhost or 127.0.0.1)
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:3000';
+        }
+        
+        // Production - use current host
+        return protocol + '//' + window.location.host;
     }
 
     connect() {
         if (this.socket) return;
         
         // Connect to server
-        this.socket = io();
+        this.socket = io(this.serverUrl);
         
         // Connection events
         this.socket.on('connect', () => {
-            console.log('Connected to server');
+            console.log('Connected to server:', this.serverUrl);
         });
 
         this.socket.on('room-created', (data) => {
