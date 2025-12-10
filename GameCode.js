@@ -649,22 +649,8 @@ function renderBattleBoards() {
                     // Normal mode or scope: show all hits and misses
                     // CRITICAL: Check if cell has a ship to determine hit vs miss
                     if (cellData.hasShip) {
-                        // Check if this is a sunk ship by checking all enemy ships
-                        let isSunk = false;
-                        for (const ship of enemyPlayerData.ships) {
-                            if (ship.sunk) {
-                                // Check if this cell is part of a sunk ship's cells
-                                for (const [r, c] of ship.cells || []) {
-                                    if (r === row && c === col) {
-                                        isSunk = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (isSunk) break;
-                        }
-                        
-                        if (isSunk) {
+                        // Check if cell is marked as sunk
+                        if (cellData.sunk) {
                             cell.classList.add('sunk');
                         } else {
                             cell.classList.add('hit');

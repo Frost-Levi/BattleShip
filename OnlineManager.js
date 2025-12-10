@@ -210,6 +210,15 @@ class OnlineManager {
                             const ship = enemyPlayerData.ships.find(s => s.name === data.shipName);
                             if (ship) {
                                 ship.sunk = true;
+                                // Mark all cells of this ship as sunk
+                                if (ship.cells) {
+                                    ship.cells.forEach(([r, c]) => {
+                                        const cell = enemyPlayerData.board[r][c];
+                                        if (cell) {
+                                            cell.sunk = true;
+                                        }
+                                    });
+                                }
                             }
                         }
                     }
