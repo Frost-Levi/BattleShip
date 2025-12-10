@@ -172,44 +172,55 @@ class OnlineManager {
             const myPlayerNumber = this.myPlayerNumber;
             let boardToUpdate, cellData;
             
-            // The shot was made, now it's nextPlayer's turn
-            // If nextPlayer is NOT me, then I just shot (enemy board gets updated)
-            // If nextPlayer IS me, then opponent just shot (my board got hit, but I see enemy board)
-            if (data.nextPlayer !== myPlayerNumber) {
-                // I just shot - update enemy board
-                const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
-                cellData = enemyPlayerData.board[data.row][data.col];
-                console.log('I shot - updating enemy board');
-            } else {
-                // Opponent just shot - their shot shows on my board, but I don't update anything visually on enemy board
-                // The server handles my board state
-                console.log('Opponent shot - not updating my board display (server handles it)');
-                // Update the current player from server
-                gameState.currentPlayer = data.nextPlayer;
-                renderBattleBoards();
-                updateBattleTitle();
-                return;
-            }
-            
             // Update the current player from server
             gameState.currentPlayer = data.nextPlayer;
             
-            // Mark the cell as hit on enemy board
-            if (cellData) {
-                cellData.isHit = true;
-            }
-            
-            // Update hit tracking
-            if (data.isHit) {
-                const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+            // The shot was made, now it's nextPlayer's turn
+            // If nextPlayer is NOT me, then I just shot (update enemy board)
+            // If nextPlayer IS me, then opponent just shot (update my own board)
+            if (data.nextPlayer !== myPlayerNumber) {
+                // I just shot - update enemy board to show hit/miss
                 const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
-                currentPlayerData.hits++;
+                cellData = enemyPlayerData.board[data.row][data.col];
+                console.log('I shot - updating enemy board at', data.row, data.col);
                 
-                if (data.shipSunk && cellData && cellData.shipId !== null) {
-                    const ship = enemyPlayerData.ships[cellData.shipId];
-                    if (ship) {
-                        ship.sunk = true;
-                        alert(`You sunk the enemy's ${ship.name}!`);
+                // Mark the cell as hit on enemy board
+                if (cellData) {
+                    cellData.isHit = true;
+                    
+                    // Update hit tracking
+                    if (data.isHit) {
+                        const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                        currentPlayerData.hits++;
+                        
+                        if (data.shipSunk && cellData.shipId !== null) {
+                            const ship = enemyPlayerData.ships[cellData.shipId];
+                            if (ship) {
+                                ship.sunk = true;
+                                alert(`You sunk the enemy's ${ship.name}!`);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Opponent just shot - update MY board to show where they hit
+                const myBoardData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                cellData = myBoardData.board[data.row][data.col];
+                console.log('Opponent shot my board at', data.row, data.col, '- hit:', data.isHit);
+                
+                // Mark the cell as hit on my own board
+                if (cellData) {
+                    cellData.isHit = true;
+                    
+                    // If opponent hit my ship, update the ship
+                    if (data.isHit && cellData.shipId !== null) {
+                        const ship = myBoardData.ships[cellData.shipId];
+                        if (ship) {
+                            ship.hits++;
+                            if (data.shipSunk) {
+                                ship.sunk = true;
+                            }
+                        }
                     }
                 }
             }

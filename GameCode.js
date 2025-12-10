@@ -545,6 +545,8 @@ function placeShip(cells, shipType) {
 
 // Battle phase
 function renderBattleBoards() {
+    console.log('Rendering battle boards - isOnline:', gameState.isOnline, 'currentPlayer:', gameState.currentPlayer, 'myPlayer:', gameState.isOnline ? onlineManager.myPlayerNumber : 'N/A');
+    
     // Determine which player's board we're rendering
     let myPlayerNumber = gameState.isOnline ? onlineManager.myPlayerNumber : gameState.currentPlayer;
     const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
@@ -658,6 +660,9 @@ function renderBattleBoards() {
                         }
                     }
                 }
+            } else if (gameState.isOnline) {
+                // In online mode, always add click handler - the handleAttack will validate turn
+                cell.addEventListener('click', handleAttack);
             } else if (canShootMore() || gameState.sonarMode) {
                 cell.addEventListener('click', handleAttack);
             }

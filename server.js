@@ -273,6 +273,20 @@ io.on('connection', (socket) => {
         
         // Update shot result
         const cellData = room.gameState[defendingPlayerKey].board[data.row][data.col];
+        
+        if (!cellData) {
+            console.log(`ERROR: Cell data not found at [${data.row}, ${data.col}]`);
+            return;
+        }
+        
+        console.log(`Cell BEFORE: hasShip=${cellData.hasShip}, isHit=${cellData.isHit}, shipId=${cellData.shipId}`);
+        
+        // Check if already hit
+        if (cellData.isHit) {
+            console.log('Cell already hit - ignoring shot');
+            return;
+        }
+        
         cellData.isHit = true;
         
         const isHit = cellData.hasShip;
