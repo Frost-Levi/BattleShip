@@ -203,11 +203,14 @@ class OnlineManager {
                         const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
                         currentPlayerData.hits++;
                         
+                        console.log('Checking sunk - shipSunk:', data.shipSunk, 'shipName:', data.shipName);
                         if (data.shipSunk && data.shipName) {
+                            console.log('Ship sunk! Marking as sunk');
                             alert(`You sunk the enemy's ${data.shipName}!`);
                             // Mark the ship as sunk on the client
                             // Find the ship by name and mark it sunk
                             const ship = enemyPlayerData.ships.find(s => s.name === data.shipName);
+                            console.log('Found ship:', ship);
                             if (ship) {
                                 ship.sunk = true;
                                 // Mark all cells of this ship as sunk
