@@ -538,8 +538,10 @@ function placeShip(cells, shipType) {
 
 // Battle phase
 function renderBattleBoards() {
-    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
-    const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+    // Determine which player's board we're rendering
+    let myPlayerNumber = gameState.isOnline ? onlineManager.myPlayerNumber : gameState.currentPlayer;
+    const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+    const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
     
     const gridSizeClass = `grid-${gameState.gridSize}x${gameState.gridSize}`;
     
@@ -659,6 +661,12 @@ function renderBattleBoards() {
 }
 
 function handleAttack(e) {
+    // In online mode, only allow shooting on your turn
+    if (gameState.isOnline && gameState.currentPlayer !== onlineManager.myPlayerNumber) {
+        alert('It\'s not your turn!');
+        return;
+    }
+    
     // Handle sonar mode
     if (gameState.sonarMode) {
         const row = parseInt(e.target.dataset.row);
@@ -673,8 +681,10 @@ function handleAttack(e) {
     const row = parseInt(e.target.dataset.row);
     const col = parseInt(e.target.dataset.col);
     
-    const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
-    const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+    // Determine which player's board we're attacking (opposite of my player)
+    let myPlayerNumber = gameState.isOnline ? onlineManager.myPlayerNumber : gameState.currentPlayer;
+    const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
+    const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
     
     const cellData = enemyPlayerData.board[row][col];
     
