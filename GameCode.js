@@ -793,6 +793,15 @@ function handleAttack(e) {
             ship.sunk = true;
             console.log(`Ship ${ship.name} SUNK!`);
             alert(`You sunk the enemy's ${ship.name}!`);
+            
+            // Mark all cells of this ship as sunk
+            ship.cells.forEach(([r, c]) => {
+                const cell = enemyPlayerData.board[r][c];
+                if (cell) {
+                    cell.sunk = true;
+                }
+            });
+            
             // Award power point for sinking a ship
             if (gameState.powerUpsEnabled) {
                 currentPlayerData.powerPoints++;
@@ -899,6 +908,13 @@ function resetGame() {
     if (onlineManager) {
         onlineManager.isReady = false;
         onlineManager.opponentReady = false;
+        
+        // Reset ready button state
+        const readyBtn = document.getElementById('ready-confirm-btn');
+        if (readyBtn) {
+            readyBtn.disabled = false;
+            readyBtn.textContent = "I'm Ready";
+        }
     }
     
     // Reset player 1
