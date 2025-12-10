@@ -166,6 +166,21 @@ h3 {
     color: white;
 }
 
+.cell.sunk {
+    background-color: #8b0000;
+    position: relative;
+}
+
+.cell.sunk::after {
+    content: '✖';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    color: white;
+}
+
 .cell.miss {
     background-color: #95a5a6;
     position: relative;
