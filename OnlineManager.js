@@ -162,43 +162,59 @@ class OnlineManager {
         });
 
         this.socket.on('shot-result', (data) => {
-            console.log('Shot result received:', {row: data.row, col: data.col, hit: data.isHit, shipSunk: data.shipSunk});
-            const enemyPlayerData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+            console.log('Shot result received:', {row: data.row, col: data.col, hit: data.isHit, shipSunk: data.shipSunk, nextPlayer: data.nextPlayer});
+            
+            // Update the current player from server
+            gameState.currentPlayer = data.nextPlayer;
+            
+            // Determine which board was hit (opposite of who's shooting)
+            const myPlayerNumber = this.myPlayerNumber;
+            const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
             const cellData = enemyPlayerData.board[data.row][data.col];
             
+            // Mark the cell as hit
             cellData.isHit = true;
             
+            // Update hit tracking
             if (data.isHit) {
-                gameState.currentPlayer === 1 ? gameState.player2.hits++ : gameState.player1.hits++;
+                const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                currentPlayerData.hits++;
                 
-                if (data.shipSunk) {
+                if (data.shipSunk && cellData.shipId !== null) {
                     const ship = enemyPlayerData.ships[cellData.shipId];
-                    if (ship) ship.sunk = true;
+                    if (ship) {
+                        ship.sunk = true;
+                        alert(`You sunk the enemy's ${ship.name}!`);
+                    }
                 }
             }
             
             // Update display
             renderBattleBoards();
+            updateBattleTitle();
             
             // Update who's turn it is
             const playerIndicator = document.getElementById('player-indicator');
             if (playerIndicator) {
-                playerIndicator.textContent = `Player ${data.nextPlayer}'s Turn`;
+                if (data.nextPlayer === this.myPlayerNumber) {
+                    playerIndicator.textContent = 'Your Turn!';
+                    playerIndicator.style.background = '#4CAF50';
+                } else {
+                    playerIndicator.textContent = 'Opponent\'s Turn';
+                    playerIndicator.style.background = '#f44336';
+                }
             }
             
             if (data.gameOver) {
-                gameState.winner = data.winner === this.playerNumber ? 'You' : 'Opponent';
+                gameState.winner = data.winner === this.myPlayerNumber ? 'You' : 'Opponent';
                 setTimeout(() => endGame(), 500);
-            } else if (data.nextPlayer !== this.playerNumber) {
+            } else if (data.nextPlayer !== this.myPlayerNumber) {
                 // It's opponent's turn
-                console.log('Opponent\'s turn after shot');
-                endTurnBtn.disabled = true;
-                updateBattleTitle();
+                console.log('Opponent\'s turn after shot - waiting');
+                // Stay on battle screen but can't shoot
             } else {
                 // It's your turn
-                console.log('Your turn after shot');
-                endTurnBtn.disabled = false;
-                updateBattleTitle();
+                console.log('Your turn after shot - you can shoot');
             }
         });
 

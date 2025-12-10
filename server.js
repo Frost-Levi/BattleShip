@@ -288,7 +288,12 @@ io.on('connection', (socket) => {
         // Check for game over
         const allShipsSunk = room.gameState[defendingPlayerKey].ships.every(ship => ship.sunk);
         
-        console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer === 1 ? 2 : 1});
+        // Update current player BEFORE broadcasting
+        if (!allShipsSunk) {
+            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
+        }
+        
+        console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer});
         
         // Broadcast shot result to both players
         io.to(playerInfo.roomId).emit('shot-result', {
@@ -298,13 +303,8 @@ io.on('connection', (socket) => {
             shipSunk: shipSunk,
             gameOver: allShipsSunk,
             winner: allShipsSunk ? attackingPlayer : null,
-            nextPlayer: room.gameState.currentPlayer === 1 ? 2 : 1
+            nextPlayer: room.gameState.currentPlayer
         });
-        
-        if (!allShipsSunk) {
-            // Update current player
-            room.gameState.currentPlayer = room.gameState.currentPlayer === 1 ? 2 : 1;
-        }
     });
 
     // End turn

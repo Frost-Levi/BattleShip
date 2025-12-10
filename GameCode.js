@@ -247,6 +247,13 @@ function showScreen(screenName) {
             currentPlayerData.extraShotUsed = false;
             battleScreen.classList.add('active');
             
+            // Hide end turn button in online mode
+            if (gameState.isOnline) {
+                endTurnBtn.style.display = 'none';
+            } else {
+                endTurnBtn.style.display = 'block';
+            }
+            
             // Add player indicator for online mode
             if (gameState.gameMode === 'online') {
                 let playerIndicator = document.getElementById('player-indicator');
@@ -742,6 +749,15 @@ function handleAttack(e) {
     
     console.log(`Shot at [${row}, ${col}] - Hit: ${cellData.hasShip}`);
     
+    // For online mode, send shot to server and let server handle everything
+    if (gameState.gameMode === 'online') {
+        console.log('Sending shot to server:', {row, col});
+        onlineManager.shoot(row, col);
+        // Don't update local state - wait for server response
+        return;
+    }
+    
+    // Offline mode - update local state immediately
     // If cloak is active, mark this cell as cloaked (so the current player can't see feedback)
     if (currentPlayerData.cloakActive) {
         currentPlayerData.cloakedCells.push([row, col]);
@@ -772,12 +788,6 @@ function handleAttack(e) {
     // Update power-ups to disable if no more shots
     if (gameState.powerUpsEnabled) {
         updatePowerUps();
-    }
-    
-    // For online mode, send shot to server
-    if (gameState.gameMode === 'online') {
-        console.log('Sending shot to server:', {row, col});
-        onlineManager.shoot(row, col);
     }
     
     // Check for game over (only for offline - online receives result from server)
