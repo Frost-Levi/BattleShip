@@ -335,9 +335,9 @@ io.on('connection', (socket) => {
             // Switch turn only if it was a miss
             shouldSwitchTurn = !isHit;
         } else if (shootingRule === 'shipfire') {
-            // Count remaining ships of the OPPONENT (defender), not the attacking player
-            const defenderKey = attackingPlayerKey === 'player1' ? 'player2' : 'player1';
-            const remainingShips = room.gameState[defenderKey].ships.filter(ship => !ship.sunk).length;
+            // Count remaining ships of the ATTACKING player (your own ships)
+            const attackingPlayerKey = `player${attackingPlayer}`;
+            const remainingShips = room.gameState[attackingPlayerKey].ships.filter(ship => !ship.sunk).length;
             shouldSwitchTurn = room.gameState.shotsThisTurn >= remainingShips;
         }
         
