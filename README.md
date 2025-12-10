@@ -6,6 +6,9 @@ A fully-featured, browser-based Battleship game with AI opponent, customizable r
 
 ### Game Modes
 - **PvP Mode**: Play against another player locally
+  - Deployed here for more stable local play https://frost-levi.github.io/BattleShip/ 
+- **Online Mode**: Play against another player Online
+  - Deployed here https://battleship-production-b56a.up.railway.app/ 
 - **AI Mode**: Challenge an AI opponent with 4 difficulty levels
   - Easy: Random targeting with bias toward edges
   - Medium: Checkerboard pattern strategy
