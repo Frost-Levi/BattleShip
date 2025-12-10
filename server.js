@@ -210,6 +210,8 @@ io.on('connection', (socket) => {
         const playerNumber = playerInfo.playerNumber;
         const playerKey = `player${playerNumber}`;
         
+        console.log(`Player ${playerNumber} updating board. Ships count: ${data.ships?.length || 0}, Board size: ${data.board?.length || 0}`);
+        
         room.gameState[playerKey].board = data.board;
         room.gameState[playerKey].ships = data.ships;
         room.gameState[playerKey].shipsPlaced = true;
@@ -256,10 +258,18 @@ io.on('connection', (socket) => {
         if (!room) return;
         
         const attackingPlayer = playerInfo.playerNumber;
+        
+        // Validate it's the attacking player's turn
+        if (room.gameState.currentPlayer !== attackingPlayer) {
+            console.log(`Invalid shot! Player ${attackingPlayer} tried to shoot but it's Player ${room.gameState.currentPlayer}'s turn`);
+            return;
+        }
+        
         const defendingPlayer = attackingPlayer === 1 ? 2 : 1;
         const defendingPlayerKey = `player${defendingPlayer}`;
         
-        console.log(`Player ${attackingPlayer} shot at [${data.row}, ${data.col}]`);
+        console.log(`Player ${attackingPlayer} shot at [${data.row}, ${data.col}] targeting Player ${defendingPlayer}'s board`);
+        console.log(`Defending player board exists: ${!!room.gameState[defendingPlayerKey].board}, Ships count: ${room.gameState[defendingPlayerKey].ships?.length || 0}`);
         
         // Update shot result
         const cellData = room.gameState[defendingPlayerKey].board[data.row][data.col];

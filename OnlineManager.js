@@ -162,25 +162,50 @@ class OnlineManager {
         });
 
         this.socket.on('shot-result', (data) => {
-            console.log('Shot result received:', {row: data.row, col: data.col, hit: data.isHit, shipSunk: data.shipSunk, nextPlayer: data.nextPlayer});
+            console.log('Shot result received:', {row: data.row, col: data.col, hit: data.isHit, shipSunk: data.shipSunk, nextPlayer: data.nextPlayer, myPlayer: this.myPlayerNumber});
+            
+            // Determine which board to update
+            // If nextPlayer changed, then the previous player just shot
+            // If I shot (my turn just ended), update enemy board
+            // If opponent shot, update my own board on the server's reflection
+            
+            const myPlayerNumber = this.myPlayerNumber;
+            let boardToUpdate, cellData;
+            
+            // The shot was made, now it's nextPlayer's turn
+            // If nextPlayer is NOT me, then I just shot (enemy board gets updated)
+            // If nextPlayer IS me, then opponent just shot (my board got hit, but I see enemy board)
+            if (data.nextPlayer !== myPlayerNumber) {
+                // I just shot - update enemy board
+                const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
+                cellData = enemyPlayerData.board[data.row][data.col];
+                console.log('I shot - updating enemy board');
+            } else {
+                // Opponent just shot - their shot shows on my board, but I don't update anything visually on enemy board
+                // The server handles my board state
+                console.log('Opponent shot - not updating my board display (server handles it)');
+                // Update the current player from server
+                gameState.currentPlayer = data.nextPlayer;
+                renderBattleBoards();
+                updateBattleTitle();
+                return;
+            }
             
             // Update the current player from server
             gameState.currentPlayer = data.nextPlayer;
             
-            // Determine which board was hit (opposite of who's shooting)
-            const myPlayerNumber = this.myPlayerNumber;
-            const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
-            const cellData = enemyPlayerData.board[data.row][data.col];
-            
-            // Mark the cell as hit
-            cellData.isHit = true;
+            // Mark the cell as hit on enemy board
+            if (cellData) {
+                cellData.isHit = true;
+            }
             
             // Update hit tracking
             if (data.isHit) {
                 const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
+                const enemyPlayerData = myPlayerNumber === 1 ? gameState.player2 : gameState.player1;
                 currentPlayerData.hits++;
                 
-                if (data.shipSunk && cellData.shipId !== null) {
+                if (data.shipSunk && cellData && cellData.shipId !== null) {
                     const ship = enemyPlayerData.ships[cellData.shipId];
                     if (ship) {
                         ship.sunk = true;
