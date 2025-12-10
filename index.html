@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen active">
+        <h1>BATTLESHIP</h1>
+        <button id="settings-btn" class="main-btn secondary">Settings</button>
+        <button id="start-game-btn" class="main-btn">Start Game</button>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <h2>Game Settings</h2>
+        <div class="settings-wrapper">
+            <div class="settings-left">
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Grid Size</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="gridSize" value="7" data-max-ships="7">
+                                <span>7x7 (Max 7 ships)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="gridSize" value="10" checked data-max-ships="10">
+                                <span>10x10 (Max 10 ships)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="gridSize" value="12" data-max-ships="12">
+                                <span>12x12 (Max 12 ships)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="gridSize" value="15" data-max-ships="15">
+                                <span>15x15 (Max 15 ships)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Fog of War</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="fogOfWar" value="off" checked>
+                                <span>Off - See hit/miss feedback</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="fogOfWar" value="on">
+                                <span>On - Only see sunk ships</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Game Mode</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="gameMode" value="pvp" checked>
+                                <span>PvP - Fight Another Player</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="gameMode" value="ai">
+                                <span>AI - Fight Computer (Beta)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container" id="ai-difficulty-container" style="display: none;">
+                    <div class="setting-group">
+                        <h3>AI Difficulty</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="easy" checked>
+                                <span>Easy - Predictable patterns</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="medium">
+                                <span>Medium - Basic checkerboard</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="hard">
+                                <span>Hard - Optimal search</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="aiDifficulty" value="impossible">
+                                <span>Impossible - Always hits</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Power-Ups</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="powerUps" value="off" checked>
+                                <span>Off - No power-ups</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="powerUps" value="on">
+                                <span>On - Enable power-ups</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-right">
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Shooting Rules</h3>
+                        <div class="option-group">
+                            <label>
+                                <input type="radio" name="shootingRules" value="oneshot" checked>
+                                <span>One shot per person</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="shootingRules" value="twoshots">
+                                <span>Two shots per person</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="shootingRules" value="threeshots">
+                                <span>Three shots per person</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="shootingRules" value="tillmiss">
+                                <span>Shoot till you miss</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="shootingRules" value="shipfire">
+                                <span>Ship Fire (shots = number of ships)</span>
+                            </label>
+                        </div>
+                        <p id="rule-description" class="rule-description">Get one shot per turn</p>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Ships Configuration</h3>
+                        <div class="ships-config-group">
+                            <div class="ship-config-item">
+                                <label>Carrier (5 cells)</label>
+                                <input type="number" class="ship-count" data-ship="Carrier" min="0" max="10" value="1">
+                            </div>
+                            <div class="ship-config-item">
+                                <label>Battleship (4 cells)</label>
+                                <input type="number" class="ship-count" data-ship="Battleship" min="0" max="10" value="1">
+                            </div>
+                            <div class="ship-config-item">
+                                <label>Cruiser (3 cells)</label>
+                                <input type="number" class="ship-count" data-ship="Cruiser" min="0" max="10" value="1">
+                            </div>
+                            <div class="ship-config-item">
+                                <label>Submarine (3 cells)</label>
+                                <input type="number" class="ship-count" data-ship="Submarine" min="0" max="10" value="1">
+                            </div>
+                            <div class="ship-config-item">
+                                <label>Destroyer (2 cells)</label>
+                                <input type="number" class="ship-count" data-ship="Destroyer" min="0" max="10" value="1">
+                            </div>
+                        </div>
+                        <p id="ship-count-display" class="ship-count-display">Total Ships: 5/10</p>
+                        <p id="ship-error-message" class="ship-error-message" style="display: none;">Invalid Settings - Please fix them</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-buttons">
+            <button id="back-to-welcome-btn" class="main-btn">Back</button>
+        </div>
+    </div>
+
+    <!-- Player Turn Screen (Blank with Play Button) -->
+    <div id="player-turn-screen" class="screen">
+        <h1 id="player-turn-text">Player 1 - Your Turn!</h1>
+        <button id="play-btn" class="main-btn">Play</button>
+    </div>
+
+    <!-- Ship Placement Screen -->
+    <div id="placement-screen" class="screen">
+        <h2 id="placement-title">Player 1 - Place Your Ships</h2>
+        <div class="game-info">
+            <p id="current-ship-info">Place your Carrier (5 cells)</p>
+            <button id="rotate-btn" class="control-btn">Rotate Ship</button>
+        </div>
+        <div class="board-container">
+            <div class="legend">
+                <h4>Legend:</h4>
+                <div class="legend-item">
+                    <div class="legend-square water"></div>
+                    <span>Water</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square ship"></div>
+                    <span>Your Ship</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square preview"></div>
+                    <span>Valid Placement</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-square invalid"></div>
+                    <span>Invalid Placement</span>
+                </div>
+            </div>
+            <div id="placement-board" class="board"></div>
+            <div class="ship-selector">
+                <h4>Select Ship:</h4>
+                <div id="ship-list">
+                    <!-- Ships will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+        <button id="done-placement-btn" class="main-btn" disabled>Done</button>
+    </div>
+
+    <!-- Battle Screen -->
+    <div id="battle-screen" class="screen">
+        <h2 id="battle-title">Player 1 - Attack!</h2>
+        <div class="battle-container">
+            <div class="legend">
+                <h4>Legend:</h4>
+                <div id="legend-normal" style="display: none;">
+                    <div class="legend-item">
+                        <div class="legend-square water"></div>
+                        <span>Water</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square ship"></div>
+                        <span>Your Ship</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square hit"></div>
+                        <span>Hit</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square miss"></div>
+                        <span>Miss</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square sunk"></div>
+                        <span>Sunk Ship</span>
+                    </div>
+                </div>
+                <div id="legend-fog-of-war" style="display: none;">
+                    <div class="legend-item">
+                        <div class="legend-square water"></div>
+                        <span>Water (Not shot)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square ship"></div>
+                        <span>Your Ship</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square shot-marker"></div>
+                        <span>Shot (Hit or Miss)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square sunk"></div>
+                        <span>Sunk Ship</span>
+                    </div>
+                </div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Your Board</h3>
+                <div id="own-board" class="board"></div>
+            </div>
+            <div class="board-wrapper">
+                <h3>Enemy Waters</h3>
+                <div id="enemy-board" class="board"></div>
+            </div>
+        </div>
+        <div id="power-ups-container" class="power-ups-container" style="display: none;">
+            <h3>Power-Ups <span id="power-points" class="power-points">Power Points: 2</span></h3>
+            <div class="power-ups-buttons">
+                <button id="sonar-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Sonar Pulse</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">Reveal 3x3 area</span>
+                </button>
+                <button id="extra-shot-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Extra Shot</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">+1 shot this turn</span>
+                </button>
+                <button id="cloak-btn" class="power-up-btn" disabled>
+                    <span class="power-up-name">Cloak</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">Hide your feedback</span>
+                </button>
+                <button id="scope-btn" class="power-up-btn" disabled style="display: none;">
+                    <span class="power-up-name">Scope</span>
+                    <span class="power-up-cost">Cost: 1</span>
+                    <span class="power-up-desc">See hit/miss feedback</span>
+                </button>
+            </div>
+        </div>
+        <button id="end-turn-btn" class="main-btn" disabled>End Turn</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen">
+        <h1 id="winner-text">Player 1 Wins!</h1>
+        <div class="stats">
+            <h2>Game Statistics</h2>
+            <div class="player-stats">
+                <h3>Player 1</h3>
+                <p>Shots Fired: <span id="p1-shots">0</span></p>
+                <p>Hits: <span id="p1-hits">0</span></p>
+                <p>Accuracy: <span id="p1-accuracy">0</span>%</p>
+            </div>
+            <div class="player-stats">
+                <h3>Player 2</h3>
+                <p>Shots Fired: <span id="p2-shots">0</span></p>
+                <p>Hits: <span id="p2-hits">0</span></p>
+                <p>Accuracy: <span id="p2-accuracy">0</span>%</p>
+            </div>
+        </div>
+        <button id="play-again-btn" class="main-btn">Play Again</button>
+    </div>
+
+    <script src="GameCode.js"></script>
+</body>
+</html>
