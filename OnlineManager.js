@@ -57,11 +57,10 @@ class OnlineManager {
             
             // Move to settings screen
             gameState.gameMode = 'online';
-            showScreen('settings');
             
-            // Show room code screen
+            // Show room code in settings screen
             setTimeout(() => {
-                showRoomCodeScreen(data.roomId);
+                showSettingsWithRoomCode(data.roomId);
             }, 100);
         });
 

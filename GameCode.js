@@ -173,6 +173,11 @@ function showScreen(screenName) {
             gameState.phase = 'settings';
             settingsScreen.classList.add('active');
             
+            // Hide room code display if not online host
+            if (gameState.gameMode !== 'online' || !onlineManager.isHost) {
+                document.getElementById('online-room-code-display').style.display = 'none';
+            }
+            
             // Show Ready button if online mode
             if (gameState.gameMode === 'online' && onlineManager.isHost) {
                 readySettingsBtn.style.display = 'block';
@@ -1574,6 +1579,13 @@ copyCodeBtn.addEventListener('click', () => {
     });
 });
 
+document.getElementById('copy-settings-code-btn').addEventListener('click', () => {
+    const roomCode = document.getElementById('settings-room-code-text').textContent;
+    navigator.clipboard.writeText(roomCode).then(() => {
+        alert('Room code copied to clipboard!');
+    });
+});
+
 backFromReadyBtn.addEventListener('click', () => {
     showScreen('onlineMenu');
 });
@@ -1585,6 +1597,12 @@ backFromRoomCodeBtn.addEventListener('click', () => {
 function showRoomCodeScreen(roomCode) {
     document.getElementById('room-code-text').textContent = roomCode;
     showScreen('roomCode');
+}
+
+function showSettingsWithRoomCode(roomCode) {
+    document.getElementById('settings-room-code-text').textContent = roomCode;
+    document.getElementById('online-room-code-display').style.display = 'block';
+    showScreen('settings');
 }
 
 function updateReadyStatus() {
