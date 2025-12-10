@@ -885,8 +885,52 @@ function endGame() {
     showScreen('gameover');
 }
 
+function resetGame() {
+    // Reset all game state for a new game
+    gameState.currentPlayer = 1;
+    gameState.winner = null;
+    gameState.isOnline = false;
+    gameState.shotsThisTurn = 0;
+    gameState.lastShotHit = false;
+    
+    // Reset player 1
+    gameState.player1 = {
+        ships: [],
+        board: [],
+        shots: 0,
+        hits: 0,
+        shipsPlaced: false,
+        ready: false,
+        cloakedCells: [],
+        extraShotUsed: false
+    };
+    
+    // Reset player 2
+    gameState.player2 = {
+        ships: [],
+        board: [],
+        shots: 0,
+        hits: 0,
+        shipsPlaced: false,
+        ready: false,
+        cloakedCells: [],
+        extraShotUsed: false
+    };
+    
+    // Initialize empty boards
+    for (let i = 0; i < gameState.gridSize; i++) {
+        gameState.player1.board[i] = [];
+        gameState.player2.board[i] = [];
+        for (let j = 0; j < gameState.gridSize; j++) {
+            gameState.player1.board[i][j] = { hasShip: false, isHit: false, shipId: null };
+            gameState.player2.board[i][j] = { hasShip: false, isHit: false, shipId: null };
+        }
+    }
+}
+
 // Event Listeners
 startGameBtn.addEventListener('click', () => {
+    resetGame();
     gameState.currentPlayer = 1;
     showScreen('playerTurn');
 });
@@ -895,10 +939,16 @@ settingsBtn.addEventListener('click', () => {
     showScreen('settings');
 });
 
+playAgainBtn.addEventListener('click', () => {
+    resetGame();
+    showScreen('welcome');
+});
+
 backToWelcomeBtn.addEventListener('click', () => {
     if (onlineManager.isOnline) {
         onlineManager.disconnect();
     }
+    resetGame();
     showScreen('welcome');
 });
 

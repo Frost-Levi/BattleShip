@@ -229,6 +229,7 @@ class OnlineManager {
                             ship.hits++;
                             if (data.shipSunk) {
                                 ship.sunk = true;
+                                alert(`Your ${ship.name} was sunk!`);
                             }
                         }
                     }
@@ -253,7 +254,9 @@ class OnlineManager {
             
             if (data.gameOver) {
                 gameState.winner = data.winner === this.myPlayerNumber ? 'You' : 'Opponent';
-                setTimeout(() => endGame(), 500);
+                setTimeout(() => {
+                    endGame();
+                }, 500);
             } else if (data.nextPlayer !== this.myPlayerNumber) {
                 // It's opponent's turn
                 console.log('Opponent\'s turn after shot - waiting');
