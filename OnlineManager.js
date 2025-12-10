@@ -205,24 +205,21 @@ class OnlineManager {
                         
                         console.log('Checking sunk - shipSunk:', data.shipSunk, 'shipName:', data.shipName);
                         if (data.shipSunk && data.shipName) {
-                            console.log('Ship sunk! Marking as sunk');
+                            console.log('Ship sunk! Marking cells as sunk');
                             alert(`You sunk the enemy's ${data.shipName}!`);
-                            // Mark the ship as sunk on the client
-                            // Find the ship by name and mark it sunk
-                            const ship = enemyPlayerData.ships.find(s => s.name === data.shipName);
-                            console.log('Found ship:', ship);
-                            if (ship) {
-                                ship.sunk = true;
-                                // Mark all cells of this ship as sunk
-                                if (ship.cells) {
-                                    ship.cells.forEach(([r, c]) => {
-                                        const cell = enemyPlayerData.board[r][c];
-                                        if (cell) {
-                                            cell.sunk = true;
-                                        }
-                                    });
+                            
+                            // Mark all adjacent hit cells as part of the sunk ship
+                            // We need to find all connected hit cells to this one
+                            const sunkCells = this.findConnectedShipCells(enemyPlayerData.board, data.row, data.col);
+                            console.log('Sunk cells found:', sunkCells);
+                            
+                            // Mark all these cells as sunk
+                            sunkCells.forEach(([r, c]) => {
+                                const cell = enemyPlayerData.board[r][c];
+                                if (cell) {
+                                    cell.sunk = true;
                                 }
-                            }
+                            });
                         }
                     }
                 }
@@ -394,6 +391,34 @@ class OnlineManager {
         if (!this.socket || !this.roomId || !this.isHost) return;
         
         this.socket.emit('update-settings', settings);
+    }
+
+    findConnectedShipCells(board, startRow, startCol) {
+        // Find all connected hit cells (horizontally or vertically) to form the ship
+        const visited = new Set();
+        const cells = [];
+        const gridSize = board.length;
+        
+        const explore = (row, col) => {
+            const key = `${row},${col}`;
+            if (visited.has(key)) return;
+            if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) return;
+            
+            const cell = board[row][col];
+            if (!cell || !cell.isHit || !cell.hasShip) return;
+            
+            visited.add(key);
+            cells.push([row, col]);
+            
+            // Check adjacent cells (horizontal and vertical only)
+            explore(row - 1, col); // up
+            explore(row + 1, col); // down
+            explore(row, col - 1); // left
+            explore(row, col + 1); // right
+        };
+        
+        explore(startRow, startCol);
+        return cells;
     }
 
     disconnect() {
