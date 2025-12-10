@@ -165,6 +165,11 @@ function showScreen(screenName) {
         case 'welcome':
             gameState.phase = 'welcome';
             welcomeScreen.classList.add('active');
+            // Hide player indicator when returning to welcome
+            const playerIndicator = document.getElementById('player-indicator');
+            if (playerIndicator) {
+                playerIndicator.remove();
+            }
             break;
         case 'onlineMenu':
             onlineMenuScreen.classList.add('active');
@@ -649,7 +654,7 @@ function renderBattleBoards() {
                     // Normal mode or scope: show all hits and misses
                     // CRITICAL: Check if cell has a ship to determine hit vs miss
                     if (cellData.hasShip) {
-                        // Check if cell is marked as sunk
+                        // Check if THIS SPECIFIC CELL is marked as sunk
                         if (cellData.sunk) {
                             cell.classList.add('sunk');
                         } else {
@@ -659,15 +664,6 @@ function renderBattleBoards() {
                     } else {
                         cell.classList.add('miss');
                         console.log(`Adding 'miss' class to [${row},${col}]`);
-                    }
-                    
-                    // Also check if ship is sunk using shipId (for local games)
-                    if (cellData.hasShip && cellData.shipId !== null) {
-                        const ship = enemyPlayerData.ships[cellData.shipId];
-                        if (ship && ship.sunk) {
-                            cell.classList.remove('hit');
-                            cell.classList.add('sunk');
-                        }
                     }
                 }
             } else if (gameState.isOnline) {
@@ -898,6 +894,12 @@ function resetGame() {
     gameState.isOnline = false;
     gameState.shotsThisTurn = 0;
     gameState.lastShotHit = false;
+    
+    // Reset online manager ready states
+    if (onlineManager) {
+        onlineManager.isReady = false;
+        onlineManager.opponentReady = false;
+    }
     
     // Reset player 1
     gameState.player1 = {
