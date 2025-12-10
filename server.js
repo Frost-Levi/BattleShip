@@ -319,12 +319,22 @@ io.on('connection', (socket) => {
         
         console.log('Broadcasting shot result:', {row: data.row, col: data.col, hit: isHit, sunk: shipSunk, nextPlayer: room.gameState.currentPlayer});
         
+        // Get ship name if sunk
+        let shipName = null;
+        if (shipSunk && shipId !== null) {
+            const ship = room.gameState[defendingPlayerKey].ships[shipId];
+            if (ship) {
+                shipName = ship.name;
+            }
+        }
+        
         // Broadcast shot result to both players
         io.to(playerInfo.roomId).emit('shot-result', {
             row: data.row,
             col: data.col,
             isHit: isHit,
             shipSunk: shipSunk,
+            shipName: shipName,
             gameOver: allShipsSunk,
             winner: allShipsSunk ? attackingPlayer : null,
             nextPlayer: room.gameState.currentPlayer

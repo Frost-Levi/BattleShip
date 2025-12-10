@@ -203,12 +203,8 @@ class OnlineManager {
                         const currentPlayerData = myPlayerNumber === 1 ? gameState.player1 : gameState.player2;
                         currentPlayerData.hits++;
                         
-                        if (data.shipSunk && cellData.shipId !== null) {
-                            const ship = enemyPlayerData.ships[cellData.shipId];
-                            if (ship) {
-                                ship.sunk = true;
-                                alert(`You sunk the enemy's ${ship.name}!`);
-                            }
+                        if (data.shipSunk && data.shipName) {
+                            alert(`You sunk the enemy's ${data.shipName}!`);
                         }
                     }
                 }
