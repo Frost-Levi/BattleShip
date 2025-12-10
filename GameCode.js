@@ -8,6 +8,7 @@ const gameState = {
     fogOfWar: false, // true = only see sunk ships, false = see hit/miss
     powerUpsEnabled: false, // true = enable power-ups system
     gameMode: 'pvp', // pvp or ai
+    isOnline: false, // true = online multiplayer
     aiDifficulty: 'easy', // easy, medium, hard, impossible
     winner: null, // null = game ongoing, 'Player 1', 'Player 2', or 'AI' on victory
     activePowerUp: null, // Currently active power-up for the turn
@@ -861,6 +862,7 @@ document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         gameState.gameMode = e.target.value;
         const aiDifficultyContainer = document.getElementById('ai-difficulty-container');
+        // Only show AI difficulty if game mode is AI (not online or pvp)
         if (gameState.gameMode === 'ai') {
             aiDifficultyContainer.style.display = 'block';
         } else {

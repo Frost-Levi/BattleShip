@@ -52,9 +52,11 @@ class OnlineManager {
             this.isOnline = true;
             this.isReady = false;
             this.opponentReady = false;
+            this.opponentConnected = false;
             
             // Set game state to player 1
             gameState.currentPlayer = 1;
+            gameState.isOnline = true;
             
             // Move to settings screen
             gameState.gameMode = 'online';
@@ -88,11 +90,15 @@ class OnlineManager {
             gameState.shootingRule = data.settings.shootingRule;
             gameState.fogOfWar = data.settings.fogOfWar;
             gameState.powerUpsEnabled = data.settings.powerUpsEnabled;
+            gameState.isOnline = true;
             
             // Sync ship counts
             Object.keys(data.settings.shipCounts).forEach(shipName => {
                 gameState.shipCounts[shipName] = data.settings.shipCounts[shipName];
             });
+            
+            // Update rules display on ready-up screen
+            updateRuleDescription();
             
             // Show ready screen for Player 2 only
             showScreen('readyUp');
