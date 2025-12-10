@@ -80,6 +80,7 @@ class OnlineManager {
         });
 
         this.socket.on('players-ready', (data) => {
+            this.roomId = data.roomId; // Set roomId from server
             this.myPlayerNumber = 2; // I am Player 2
             this.playerNumber = 1; // Player 1 starts
             this.isOnline = true;
